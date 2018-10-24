@@ -1,12 +1,17 @@
 Package: goodICA
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Approximate Independent Component Anaylsis
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Authors@R: c(
+    person("Paul", "Smith", email = "mmpws@leeds.ac.uk", role = c("aut", "cre")),
+    person("Jochen", "Voss",role = "aut"))
+Maintainer: Paul Smith <mmpws@leeds.ac.uk>
+BugReports: https://github.com/pws3141/goodICA/issues
+Description: 
+An implementation of approximate Indepdendent Component Analysis, using clustering and optimisation of random projections of the data. It combines ordering of random points on the projective space and clustering of the best points using divisive k-means until some tolerance condition is met, with an optimisation step for each cluster. Each loading is found sequentially, and Householder rotations are used to make each loading orthogonal to all previous ones.
+Imports:
+    jvmulti
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 NeedsCompilation: no
