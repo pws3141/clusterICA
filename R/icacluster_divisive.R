@@ -45,20 +45,24 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
                     size_clust) {
     # do we have whitened data?
     if (missing(xw)) {
-        if (missing(p)) stop("Need to specify p")
-        trans <- whiten(x, n.comp=p)
+        if (missing(p)) {
+            if(missing(num_loadings)) stop("Need to specify p or num_loadings")
+            cat("Set p = num_loadings + 1")
+            p <- num_loadings + 1
+        }
+        xw <- whiten(x, compute.scores=TRUE)
     } else {
         # rescale xw so works with p
         if (!missing(p)) {
             if (!(floor(p) == p)) stop("p must be integer valued")
-            if (p > length(xw$inv)) stop("p too large for xw")
-            xw$vt <- xw$vt[1:p,]
-            xw$inv <- xw$inv[1:p]
-            xw$w <- xw$w[,1:p]
+            if (p > xw$q) stop("p too large for xw")
+            xw$loadings <- xw$loadings[,1:p]
+            xw$q <- p
+            xw$post.mul <- xw$post.mul[1:p]
+            xw$y <- xw$y[,1:p]
         }
-        trans <- xw
     }
-    z <- trans$w
+    z <- xw$y
 
     n <- nrow(z)
     if(missing(p)) p <- ncol(z)
@@ -139,7 +143,7 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
 
     colnames(IC) <- paste0('IC', seq_len(num_loadings))
 
-    res <- list(xw=trans, x=z %*% IC, IC=IC, entr=entr, m=m)
+    res <- list(xw=xw, x=z %*% IC, IC=IC, entr=entr, m=m)
     class(res) = "goodICA"
     res
 }
