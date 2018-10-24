@@ -15,7 +15,7 @@ entropy <- function(x, m, sortt=TRUE) {
 }
 
 
-rand.dirs <- function(z, IC, k, m, iter=5000, out, seed) {
+rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
     p <- ncol(z)
     n <- nrow(z)
     if(missing(m)) m <- floor(sqrt(n))
@@ -25,6 +25,15 @@ rand.dirs <- function(z, IC, k, m, iter=5000, out, seed) {
 
     if (!missing(seed)) set.seed(seed)
     trials_mat <- matrix(rnorm(r*iter), iter, r)
+    # lets try with some elements zero
+    # seemed to work well when tried a while back
+    if(zeros == TRUE) {
+        trials_mat <- t(apply(trials_mat, 1, function(trials) {
+            sampp <- sample(1:r, size=sample(1:(r-2), 1), replace=FALSE)
+            trials[sampp] <- 0
+            trials
+            }))
+    }
     trials_mat <- trials_mat / sqrt(rowSums(trials_mat^2))
     trials.orig.space <- trials_mat %*% t(IC[,k:p])
     # switch to columns for each trial so that entr works
