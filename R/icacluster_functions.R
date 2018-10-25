@@ -28,8 +28,14 @@ rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
     # lets try with some elements zero
     # seemed to work well when tried a while back
     if(zeros == TRUE) {
+        # probs means that the smaller PC loadings are more
+        # likely to be ignored.
+        probs <- seq(from=1/r, to=1, length=r)
         trials_mat <- t(apply(trials_mat, 1, function(trials) {
-            sampp <- sample(1:r, size=sample(1:(r-2), 1), replace=FALSE)
+            # always want at least two non-zero elements
+            # otherwise would just get the PC loading back
+            sampp <- sample(1:r, size=sample(1:(r-2), 1), 
+                                replace=FALSE, prob=probs)
             trials[sampp] <- 0
             trials
             }))
@@ -162,11 +168,11 @@ ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
 }
 
 
-print.goodICA <- function(y, ...) {
-    loadings <- ncol(y$IC)
-    length <- nrow(y$IC)
-    entr1 <- round(y$entr[1], digits = 5)
+print.goodICA <- function(x, ...) {
+    loadings <- ncol(x$IC)
+    length <- nrow(x$IC)
+    entr1 <- round(x$entr[1], digits = 5)
     cat("Cluster ICA: ", loadings, " loading(s) found of length ", length,
         ". Best projection has entropy ", entr1, ".\n", sep="")
-    invisible(y)
+    invisible(x)
 }

@@ -43,11 +43,15 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
                     kmeans_tol=0.1, kmeans_iter=100,
                     optim_maxit=1000, seed, opt_method="Nelder-Mead",
                     size_clust) {
-    # do we have whitened data?
+    
+    # check if we have whitened data
+    # here p is how many PCA loadings we use to do ICA on
+    # num_loadings is how many ICA loadings we want outputted
     if (missing(xw)) {
         if (missing(p)) {
             if(missing(num_loadings)) stop("Need to specify p or num_loadings")
-            cat("Set p = num_loadings + 1")
+            cat("Set p = num_loadings + 1. 
+                Worth specifying p larger s.t. whitening is not so drastic.")
             p <- num_loadings + 1
         }
         xw <- whiten(x, compute.scores=TRUE)
@@ -71,7 +75,7 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
     # some error checking
     if(num_loadings > p) {
         warning("num_loadings = ", num_loadings, " must be less than p = ", p, 
-                    ". Set num_loadings = p - 1")
+                    ". Set num_loadings = p - 1.")
         num_loadings <- p - 1
     }
 
@@ -97,7 +101,8 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
                 size_clust <- 1L
             }
         if(!missing(size_clust) && size_clust < -1) {
-                warning("size_clust must be >= 1. Set size_clust = ", as.integer(-size_clust))
+                warning("size_clust must be >= 1. Set size_clust = ", 
+                            as.integer(-size_clust))
                 size_clust <- as.integer(-size_clust)
             }
         if(!missing(size_clust) && (size_clust > 1)) {
@@ -123,7 +128,8 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
         if(!missing(size_clust) && (size_clust > 1)) {
             ica_loading <- ica_loading$best
         }
-        cat("//// Optimised direction has entropy ", ica_loading$dir_entr, "\n", sep="")
+        cat("//// Optimised direction has entropy ", 
+                ica_loading$dir_entr, "\n", sep="")
         best_entr <- ica_loading$dir_entr
         best_dir <- ica_loading$dir_optim
 
