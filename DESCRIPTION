@@ -3,16 +3,20 @@ Type: Package
 Title: Approximate Independent Component Anaylsis
 Version: 0.1.0
 Authors@R: c(
-    person("Paul", "Smith", email = "mmpws@leeds.ac.uk", role = c("aut", "cre")),
-    person("Jochen", "Voss",role = "aut"))
+  person("Paul", "Smith", email = "mmpws@leeds.ac.uk", role = c("aut", "cre")),
+  person("Jochen", "Voss", email = "J.Voss@leeds.ac.uk", role = "aut"))
 Maintainer: Paul Smith <mmpws@leeds.ac.uk>
 BugReports: https://github.com/pws3141/goodICA/issues
-Description: 
-An implementation of approximate Indepdendent Component Analysis, using clustering and optimisation of random projections of the data. It combines ordering of random points on the projective space and clustering of the best points using divisive k-means until some tolerance condition is met, with an optimisation step for each cluster. Each loading is found sequentially, and Householder rotations are used to make each loading orthogonal to all previous ones.
+Description:
+  An implementation of approximate Indepdendent Component Analysis, using
+  clustering and optimisation of random projections of the data. It combines
+  ordering of random points on the projective space and clustering of the best
+  points using divisive k-means until some tolerance condition is met, with an
+  optimisation step for each cluster. Each loading is found sequentially, and
+  Householder rotations are used to make each loading orthogonal to all
+  previous ones.
 Imports:
-    jvmulti
+  jvmulti
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
 NeedsCompilation: no
-Packaged: 2018-10-19 12:27:40 UTC; voss
