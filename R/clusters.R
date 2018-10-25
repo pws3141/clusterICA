@@ -73,14 +73,14 @@ proj.divisive_clust <- function(X, tol, maxiter=100) {
 	c_curr <- rep(1, n)
 	wss <- proj.wss(X=X, c=c_curr)$wss
 	if (missing(tol)) {
-		tol <- 0.4 * wss
+		tol_wss <- 0.4 * wss
 		} else {
-			tol <- tol *wss
+			tol_wss <- tol *wss
 		}
 	rss_all <- proj.wss(X=X, c=c_curr)	
 	rss_max <- which.max(rss_all$rss)
 	wss_all <- wss
-	while(wss > tol & i < maxiter) {
+	while(wss > tol_wss & i < maxiter) {
 		i <- i + 1
 		# select cluster with largest rss 
 		# nb drop=F not needed as clust with only 1 element will not be picked
@@ -97,15 +97,26 @@ proj.divisive_clust <- function(X, tol, maxiter=100) {
 		c_curr[which_curr] <- c_tmp
 		
 		# find which cluster has largest RSS
-		# this is at end of loop so that wss > tol is correct
+		# this is at end of loop so that wss > tol_wss is correct
 		rss_all <- proj.wss(X=X, c=c_curr)
 		rss_max <- which.max(rss_all$rss)
 		wss <- rss_all$wss
 		wss_all[i] <- wss
 	}
 	if (i == maxiter) warning("Max iterations reached: increase maxiter or tol")
-	if (any(rss_all$rss == 0)) warning("Sparse or missing clusters, try increasing tolerance")
-	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all)
+	#cat(tol, "\n")
+	if (any(rss_all$rss == 0)) {
+		cat("Sparse or missing clusters. Tolerance increased to tol = ", 
+				tol + 0.1, "\n")
+		rss_tmp <- rss_all$rss
+		while(any(rss_tmp == 0)) {
+			tol <- tol + 0.1
+			out <- proj.divisive_clust(X=X, tol=tol, maxiter=maxiter)
+			rss_tmp <- out$rss_all$rss
+			if(!any(rss_tmp == 0)) return(out)
+		}
+	}
+	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all, tol=tol)
 }
 
 proj.wss <- function(X, c) {
