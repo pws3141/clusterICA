@@ -1,8 +1,66 @@
+# k-means++ algorithm
+# Choose one center uniformly at random from among the data points.
+# For each data point x, compute D(x), the distance between x and the nearest center that has already been chosen.
+# Choose one new data point at random as a new center, using a weighted probability distribution where a point x is chosen with probability proportional to D(x)2.
+# Repeat Steps 2 and 3 until k centers have been chosen.
+# Now that the initial centers have been chosen, proceed using standard k-means clustering.
+.projective.plusplus <- function(X, K) {
+    n <- nrow(X)
+    p <- ncol(X)
+
+    DX <- rep(1/n, n)
+    dist <- matrix(0, nrow=n, ncol=K)
+    for (k in 1:K) {
+        sample_tmp <- sample(n, size=1, prob=DX)
+        point_tmp <- X[sample_tmp, ]
+        dist[, k] <- 1 - (X %*% point_tmp)^2
+        # overwrite to stop numerical errors so that DX is always positive
+        dist[sample_tmp, k] <- 0
+        DX <- apply(dist[,1:k,drop=FALSE], 1, min)
+    }
+    apply(dist, 1, which.min)
+}
+
+
+# find total sum of squares and
+# within cluster sum-of-squares
+.projective.wss <- function(X, c) {
+    K <- max(c)
+    p <- ncol(X)
+    n <- nrow(X)
+
+    # emply list of matrix for splitting into clusters
+    clust <- vector(mode = "list", length = K)
+    for(i in 1:K) {
+        clust[[i]] <- matrix(nrow=length(which(c == i)), ncol = p)
+    }
+    # split X into clusters
+    ticker <- rep(0, K)
+    for(i in 1:n) {
+        c_tmp <- c[i]
+        ticker[c_tmp] <- ticker[c_tmp] + 1
+        clust[[c_tmp]][ticker[c_tmp],] <- X[i,]
+    }
+    wss_clust <- sapply(clust, function(x) {
+        n_tmp <- nrow(x)
+        # TODO: make this if statement redundant. Don't want empty clusters
+        if(n_tmp == 0) {
+            SEE <- 0
+        } else {
+            s <- La.svd(x, nu=0, nv=1)
+            SSE <- n_tmp - s$d[1]^2
+        }
+    })
+    wss <- sum(wss_clust)
+    return(list(wss=wss, rss=wss_clust))
+}
+
+# calculate entropy using the m-spacing method
 .entropy <- function(x, m) {
     if(is.vector(x)) x <- matrix(x, nrow=1)
     if(ncol(x) == 1 && nrow(x) > 1) {
         # transpose matrx is 1 column
-        #cat("assumed n = 1 and  p = ", nrow(x), "\n")
+        # cat("assumed n = 1 and  p = ", nrow(x), "\n")
         x <- t(x)
     }
     x <- t(apply(x, 1, function(x) sort(x, method="radix")))
@@ -14,8 +72,11 @@
     apply(log(n * d / m), 1, sum) / n - digamma(m) + log(m)
 }
 
-
-rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
+# produce random directions, and choose the 'out' best directions
+# best directions are those that minimise entropy
+# zeros=TRUE allow some elements of the direction to be zero
+# with a higher change of those associated with lower PC loadings being zero
+.rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
     p <- ncol(z)
     n <- nrow(z)
     if(missing(m)) m <- floor(sqrt(n))
@@ -44,7 +105,7 @@ rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
     trials.orig.space <- trials_mat %*% t(IC[,k:p])
     # switch to columns for each trial so that entr works
     trials.proj <- trials.orig.space %*% t(z)
-    entr <- entropy(trials.proj, m=m, sortt=TRUE)
+    entr <- .entropy(trials.proj, m=m)
 
     dir.table <- cbind(entr, trials_mat)
     # arange in order
@@ -71,7 +132,64 @@ rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
 }
 
 
-dir.optim <- function(z, IC, k, m, dirs, maxit=1000, 
+
+# put random directions into clusters
+# uses divisive kmeans clustering from projective.divisive_clust
+.cluster.norm <- function(z, IC, k, m, dirs, kmeans_tol=0.1,
+                         kmeans_iter=100, save.all=FALSE, clust_avg=FALSE) {
+    # convert dirs to listrbose=
+    p <- ncol(z)
+    n <- nrow(z)
+    if(missing(m)) m <- floor(sqrt(n))
+    if(missing(IC)) IC <- diag(p)
+    if(missing(k)) k <- 1
+
+    #stopifnot(p == ncol(dirs))
+    entr <- dirs$entr
+    dirs <- dirs$dirs
+    dirs.list <- lapply(seq_len(nrow(dirs)), function(i) dirs[i,])
+
+    # list of clusters
+
+    # K-Means Cluster Analysis: Divisive
+    c <- projective.divisive_clust(X=dirs, tol=kmeans_tol, maxiter=kmeans_iter)
+    clusters <- max(c$c)
+    
+    # append cluster assignment & put into list
+    out_tmp <- vector(mode = "list", length = clusters)
+    dirs.cluster_append <- cbind(c$c, entr, dirs)
+    for(i in 1:clusters) {
+        which.cluster <- which(dirs.cluster_append[,1] == i)
+        if (save.all == FALSE & clust_avg==FALSE) {
+            out_tmp[[i]]$entr <- dirs.cluster_append[which.cluster, 2]
+            entr_min <- which.min(out_tmp[[i]]$entr)
+            out_tmp[[i]]$entr <- out_tmp[[i]]$entr[entr_min]
+            out_tmp[[i]]$dirs <- dirs.cluster_append[which.cluster, c(-1, -2), 
+                                                        drop=FALSE]
+            out_tmp[[i]]$dirs <- out_tmp[[i]]$dirs[entr_min,]
+        } else {
+            out_tmp[[i]]$entr <- dirs.cluster_append[which.cluster, 2]
+            out_tmp[[i]]$dirs <- dirs.cluster_append[which.cluster, c(-1, -2)]
+            if (clust_avg == TRUE) {
+                s <- La.svd(out_tmp[[i]]$dirs, nu=0, nv=1)
+                centre <- s$vt[1,]
+                out_tmp[[i]]$dirs <- centre
+                centre.orig.space <- centre %*% t(IC[,k:p])
+                # switch to columns for each trial so that entr works
+                centre.proj <- centre.orig.space %*% t(z)
+                entr <- .entropy(centre.proj, m=m)
+                out_tmp[[i]]$entr <- entr
+            }
+        }
+    }
+    out_tmp
+    return(out_tmp)
+}
+
+# optimise each direction
+# here dir is a single direction (vector)
+# cluster arg only used for cat() in goodICA
+.dir.optim <- function(z, IC, k, m, dirs, maxit=1000, 
                         cluster, opt_method="Nelder-Mead") {
     n <- ncol(z)
 
@@ -80,7 +198,7 @@ dir.optim <- function(z, IC, k, m, dirs, maxit=1000,
                      w <- w / sqrt(sum(w^2))
                      w.orig.space <- IC %*% c(rep(0, k-1), w)
                      z_proj <- z %*% w.orig.space
-                     entropy(z_proj, m = m)
+                     .entropy(z_proj, m = m)
                  }, method = opt_method, control = list(maxit = maxit))
     
     if (opt$convergence == 1) {
@@ -99,8 +217,11 @@ dir.optim <- function(z, IC, k, m, dirs, maxit=1000,
     output
 }
 
-ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
-                         opt_method="Nelder-Mead", size_clust) {
+# create a single ICA loading from clustered random projections
+# input is from .cluster.norm
+.ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
+                         opt_method="Nelder-Mead", size_clust,
+                         clust_avg=FALSE) {
     n <- nrow(z)
     p <- ncol(z)
     if(missing(m)) m <- floor(sqrt(n))
@@ -119,7 +240,7 @@ ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
         n_tmp <- length(dir_tmp$entr)
         nn[i] <- n_tmp
         if(n_tmp == 1) {
-            dir_opt_tmp <- dir.optim(z = z, IC = IC, dirs = dir_tmp$dirs,
+            dir_opt_tmp <- .dir.optim(z = z, IC = IC, dirs = dir_tmp$dirs,
                                      k = k, m = m, maxit = maxit,
                                      cluster=i, opt_method=opt_method)
 
@@ -132,7 +253,7 @@ ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
             }
             dir_opt_clust <- lapply(samp, function(j) {
                 dirr <- dir_tmp$dirs[j,]
-                dir_opt_tmp <- dir.optim(z = z, IC = IC, dirs = dirr,
+                dir_opt_tmp <- .dir.optim(z = z, IC = IC, dirs = dirr,
                                          k = k, m = m, maxit = maxit, cluster=i,
                                          opt_method=opt_method)
             })
@@ -167,7 +288,7 @@ ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
     }
 }
 
-
+# for class goodICA
 print.goodICA <- function(x, ...) {
     loadings <- ncol(x$IC)
     length <- nrow(x$IC)
@@ -176,3 +297,4 @@ print.goodICA <- function(x, ...) {
         ". Best projection has entropy ", entr1, ".\n", sep="")
     invisible(x)
 }
+

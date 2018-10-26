@@ -1,45 +1,109 @@
-cluster.norm <- function(z, IC, k, m, dirs, kmeans_tol=0.1,
-                         kmeans_iter=100, save.all=FALSE) {
-    # convert dirs to listrbose=
-    p <- ncol(z)
-    n <- nrow(z)
-    if(missing(m)) m <- floor(sqrt(n))
-    if(missing(IC)) IC <- diag(p)
-    if(missing(k)) k <- 1
 
-    #stopifnot(p == ncol(dirs))
-    entr <- dirs$entr
-    dirs <- dirs$dirs
-    dirs.list <- lapply(seq_len(nrow(dirs)), function(i) dirs[i,])
-
-    # list of clusters
-
-    # K-Means Cluster Analysis: Divisive
-    c <- projective.divisive_clust(X=dirs, tol=kmeans_tol, maxiter=kmeans_iter)
-    clusters <- max(c$c)
-    
-    # append cluster assignment & put into list
-    out_tmp <- vector(mode = "list", length = clusters)
-    dirs.cluster_append <- cbind(c$c, entr, dirs)
-    for(i in 1:clusters) {
-        which.cluster <- which(dirs.cluster_append[,1] == i)
-        if (save.all == FALSE) {
-            out_tmp[[i]]$entr <- dirs.cluster_append[which.cluster, 2]
-            entr_min <- which.min(out_tmp[[i]]$entr)
-            out_tmp[[i]]$entr <- out_tmp[[i]]$entr[entr_min]
-            out_tmp[[i]]$dirs <- dirs.cluster_append[which.cluster, c(-1, -2)]
-            out_tmp[[i]]$dirs <- out_tmp[[i]]$dirs[entr_min,]
+# The following function is an implementation of the k-Means algorithm
+# on projective spaces.  PCA-part is used for the initial cluster assignments.
+projective.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
+    n <- nrow(X)
+    if(missing(initial)) {
+        c <- .projective.plusplus(X, K)
         } else {
-            out_tmp[[i]]$entr <- dirs.cluster_append[which.cluster, 2]
-            out_tmp[[i]]$dirs <- dirs.cluster_append[which.cluster, c(-1, -2)]
+            if (!is.numeric(initial)) stop("initial must be a vector of clusters")
+            c <- initial
+            if(missing(K)) K <- max(c)
+        }
+    
+    j <- 0
+    for (i in 1:maxiter) {
+        j <- j + 1
+        dist <- matrix(0, nrow=n, ncol=K)
+        for (k in 1:K) {
+            Y <- X[c == k,, drop=FALSE]
+            # need to change this so that the clust mean changes...
+            # don't want empty clustering
+            if(!(nrow(Y) == 0)) {
+                s <- La.svd(Y, nu=0, nv=1)
+                centre <- s$vt[1,]
+                dist[, k] <- 1 - (X %*% centre)^2
+            }
+
+        }
+        c.old <- c
+        c <- apply(dist, 1, which.min)
+
+        if (all(c.old == c)) {
+            break
         }
     }
-    out_tmp
-    return(out_tmp)
+    if(verbose == TRUE) {
+        if(j < maxiter) cat("Converged to ", K, " clusters in ", j, " iterations \n")
+        if(j == maxiter) cat("Maximum iterations of ", maxiter, " used, consider increasing maxiter \n")
+    }
+    c
 }
 
 
-goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
+# clustering method using heirarchical divisive clustering
+# tolerance is a percentage of the total sum of squares
+# when total within-sum-of-squares hits this tol then breaks
+projective.divisive_clust <- function(X, tol, maxiter=100) {
+    stopifnot(tol > 0 && tol <= 1)
+
+    p <- ncol(X)
+    n <- nrow(X)
+
+	i <- 0
+	c_curr <- rep(1, n)
+	rss_all <- .projective.wss(X=X, c=c_curr)	
+	wss <- rss_all$wss
+	if (missing(tol)) {
+		tol_wss <- 0.1 * wss
+		} else {
+			tol_wss <- tol *wss
+		}
+	rss_max <- which.max(rss_all$rss)
+	wss_all <- wss
+	while(wss > tol_wss & i < maxiter) {
+		i <- i + 1
+		# select cluster with largest rss 
+		# nb drop=F not needed as clust with only 1 element will not be picked
+		clust_max <- X[c_curr == rss_max, , drop=FALSE]
+
+		# split this cluster into two using kmeans
+		c_tmp <- projective.cluster(X=clust_max, K=2, verbose=FALSE)
+
+		# rearrange c_curr so that we can add c=1 and c=2 for new clust
+		which_curr <- which(c_curr==rss_max)
+		if(rss_max > 1) c_curr[c_curr < rss_max] <- c_curr[c_curr < rss_max] + 1
+		c_curr[-which_curr] <- c_curr[-which_curr] + 1
+		# add new clust to beginning
+		c_curr[which_curr] <- c_tmp
+		
+		# find which cluster has largest RSS
+		# this is at end of loop so that wss > tol_wss is correct
+		rss_all <- .projective.wss(X=X, c=c_curr)
+		rss_max <- which.max(rss_all$rss)
+		wss <- rss_all$wss
+		wss_all[i] <- wss
+	}
+	if (i == maxiter) warning("Max iterations reached: increase maxiter or tol")
+
+    # account for numerical error in if statement
+	if (any(rss_all$rss < 10e-16)) {
+		cat("Sparse or missing clusters. Tolerance increased to tol = ", 
+				tol + 0.1, "\n")
+		rss_tmp <- rss_all$rss
+		while(any(rss_tmp < 10e-16)) {
+			tol <- tol + 0.1
+			out <- projective.divisive_clust(X=X, tol=tol, maxiter=maxiter)
+			rss_tmp <- out$rss_all$rss
+			if(!any(rss_tmp == 0)) return(out)
+		}
+	}
+	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all, tol=tol)
+}
+
+# ICA function
+
+goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100,
                     kmeans_tol=0.1, kmeans_iter=100,
                     optim_maxit=1000, seed, opt_method="Nelder-Mead",
                     size_clust) {
@@ -48,13 +112,7 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
     # here p is how many PCA loadings we use to do ICA on
     # num_loadings is how many ICA loadings we want outputted
     if (missing(xw)) {
-        if (missing(p)) {
-            if(missing(num_loadings)) stop("Need to specify p or num_loadings")
-            cat("Set p = num_loadings + 1. 
-                Worth specifying p larger s.t. whitening is not so drastic.")
-            p <- num_loadings + 1
-        }
-        xw <- whiten(x, compute.scores=TRUE)
+        xw <- jvmulti::whiten(x, compute.scores=TRUE)
     } else {
         # rescale xw so works with p
         if (!missing(p)) {
@@ -70,6 +128,7 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
 
     n <- nrow(z)
     if(missing(p)) p <- ncol(z)
+    if(missing(num_loadings)) num_loadings <- p - 1
     if(missing(m)) m <- floor(sqrt(n))
 
     # some error checking
@@ -88,7 +147,7 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
         r <- p - k + 1 # the dimension of the search space
         
         cat("// Finding random starting points", "\n")
-        rand_dir <- rand.dirs(z=z, IC=IC, k=k, m=m, iter=rand_iter, out=rand_out,
+        rand_dir <- .rand.dirs(z=z, IC=IC, k=k, m=m, iter=rand_iter, out=rand_out,
                               seed=seed)
         cat("/// Found ", length(rand_dir$entr), " starting directions", "\n", 
             sep="")
@@ -106,11 +165,11 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
                 size_clust <- as.integer(-size_clust)
             }
         if(!missing(size_clust) && (size_clust > 1)) {
-            best_dirs <- cluster.norm(z = z, IC=IC, k=k, m=m,
+            best_dirs <- .cluster.norm(z = z, IC=IC, k=k, m=m,
                                       dirs=rand_dir, kmeans_tol=kmeans_tol,
                                       kmeans_iter=kmeans_iter, save.all=TRUE)
         } else {
-            best_dirs <- cluster.norm(z = z, IC=IC, k=k, m=m,
+            best_dirs <- .cluster.norm(z = z, IC=IC, k=k, m=m,
                                       dirs=rand_dir, kmeans_tol=kmeans_tol,
                                       kmeans_iter=kmeans_iter)
         }
@@ -122,7 +181,7 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=500,
         # step 2: use local optimisation to find the best solution in the
         # each cluster
         cat("//// Optimising ", length(best_dirs), " clusters", "\n", sep="")
-        ica_loading <- ica.clusters(z=z, IC=IC, k=k, m=m,
+        ica_loading <- .ica.clusters(z=z, IC=IC, k=k, m=m,
                                     best_dirs=best_dirs, maxit = optim_maxit,
                                     opt_method=opt_method, size_clust=size_clust)
         if(!missing(size_clust) && (size_clust > 1)) {
