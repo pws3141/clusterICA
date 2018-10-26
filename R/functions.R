@@ -87,6 +87,7 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
 	if (i == maxiter) warning("Max iterations reached: increase maxiter or tol")
 
     # account for numerical error in if statement
+    # TODO: don't bother with this?
 	if (any(rss_all$rss < 10e-16)) {
 		cat("Sparse or missing clusters. Tolerance increased to tol = ", 
 				tol + 0.1, "\n")
