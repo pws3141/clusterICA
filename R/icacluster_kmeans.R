@@ -18,9 +18,8 @@ cluster.norm <- function(z, IC, k, m, dirs, clusters,
     if(missing(clusters)) {
         wss <- numeric()
         for(i in 1:15) {
-            c <- proj.cluster(X=dirs, K=i, maxiter=100,
-                                plot=FALSE, verbose=FALSE)
-            wss[i] <- proj.wss(X=dirs, c)
+            c <- projective.cluster(X=dirs, K=i, maxiter=100, verbose=FALSE)
+            wss[i] <- projective.wss(X=dirs, c)
         }
         wss_max <- max(wss)
         plot(1:15, wss, type="b", ylim=c(0,wss_max), xlab="Number of Clusters",
@@ -33,7 +32,7 @@ cluster.norm <- function(z, IC, k, m, dirs, clusters,
     # list of clusters
     #return(clusters)
     # K-Means Cluster Analysis
-    c <- proj.cluster(X = dirs, K = clusters, maxiter=kmeans_iter,
+    c <- projective.cluster(X = dirs, K = clusters, maxiter=kmeans_iter,
                       initial=kmeans_initial)
 
     # append cluster assignment & put into list

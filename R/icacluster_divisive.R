@@ -15,7 +15,7 @@ cluster.norm <- function(z, IC, k, m, dirs, kmeans_tol=0.1,
     # list of clusters
 
     # K-Means Cluster Analysis: Divisive
-    c <- proj.divisive_clust(X=dirs, tol=kmeans_tol, maxiter=kmeans_iter)
+    c <- projective.divisive_clust(X=dirs, tol=kmeans_tol, maxiter=kmeans_iter)
     clusters <- max(c$c)
     
     # append cluster assignment & put into list

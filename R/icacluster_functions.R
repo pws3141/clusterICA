@@ -1,4 +1,4 @@
-entropy <- function(x, m, sortt=TRUE) {
+.entropy <- function(x, m) {
     if(is.vector(x)) x <- matrix(x, nrow=1)
     if(ncol(x) == 1 && nrow(x) > 1) {
         # transpose matrx is 1 column

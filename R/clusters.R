@@ -4,7 +4,7 @@
 # Choose one new data point at random as a new center, using a weighted probability distribution where a point x is chosen with probability proportional to D(x)2.
 # Repeat Steps 2 and 3 until k centers have been chosen.
 # Now that the initial centers have been chosen, proceed using standard k-means clustering.
-proj.plusplus.part <- function(X, K) {
+projective.plusplus.part <- function(X, K) {
     n <- nrow(X)
     p <- ncol(X)
 
@@ -24,10 +24,10 @@ proj.plusplus.part <- function(X, K) {
 
 # The following function is an implementation of the k-Means algorithm
 # on projective spaces.  PCA-part is used for the initial cluster assignments.
-proj.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
+projective.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
     n <- nrow(X)
     if(missing(initial)) {
-    	c <- proj.plusplus.part(X, K)
+    	c <- projective.plusplus.part(X, K)
     	} else {
     		if (!is.numeric(initial)) stop("initial must be a vector of clusters")
     		c <- initial
@@ -63,7 +63,7 @@ proj.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
     c
 }
 
-proj.divisive_clust <- function(X, tol, maxiter=100) {
+projective.divisive_clust <- function(X, tol, maxiter=100) {
     stopifnot(tol > 0 && tol <= 1)
 
     p <- ncol(X)
@@ -71,13 +71,13 @@ proj.divisive_clust <- function(X, tol, maxiter=100) {
 
 	i <- 0
 	c_curr <- rep(1, n)
-	wss <- proj.wss(X=X, c=c_curr)$wss
+	wss <- projective.wss(X=X, c=c_curr)$wss
 	if (missing(tol)) {
 		tol_wss <- 0.4 * wss
 		} else {
 			tol_wss <- tol *wss
 		}
-	rss_all <- proj.wss(X=X, c=c_curr)	
+	rss_all <- projective.wss(X=X, c=c_curr)	
 	rss_max <- which.max(rss_all$rss)
 	wss_all <- wss
 	while(wss > tol_wss & i < maxiter) {
@@ -87,7 +87,7 @@ proj.divisive_clust <- function(X, tol, maxiter=100) {
 		clust_max <- X[c_curr == rss_max, , drop=FALSE]
 
 		# split this cluster into two using kmeans
-		c_tmp <- proj.cluster(X=clust_max, K=2, verbose=FALSE)
+		c_tmp <- projective.cluster(X=clust_max, K=2, verbose=FALSE)
 
 		# rearrange c_curr so that we can add c=1 and c=2 for new clust
 		which_curr <- which(c_curr==rss_max)
@@ -98,7 +98,7 @@ proj.divisive_clust <- function(X, tol, maxiter=100) {
 		
 		# find which cluster has largest RSS
 		# this is at end of loop so that wss > tol_wss is correct
-		rss_all <- proj.wss(X=X, c=c_curr)
+		rss_all <- projective.wss(X=X, c=c_curr)
 		rss_max <- which.max(rss_all$rss)
 		wss <- rss_all$wss
 		wss_all[i] <- wss
@@ -111,7 +111,7 @@ proj.divisive_clust <- function(X, tol, maxiter=100) {
 		rss_tmp <- rss_all$rss
 		while(any(rss_tmp == 0)) {
 			tol <- tol + 0.1
-			out <- proj.divisive_clust(X=X, tol=tol, maxiter=maxiter)
+			out <- projective.divisive_clust(X=X, tol=tol, maxiter=maxiter)
 			rss_tmp <- out$rss_all$rss
 			if(!any(rss_tmp == 0)) return(out)
 		}
@@ -119,7 +119,7 @@ proj.divisive_clust <- function(X, tol, maxiter=100) {
 	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all, tol=tol)
 }
 
-proj.wss <- function(X, c) {
+projective.wss <- function(X, c) {
     K <- max(c)
     p <- ncol(X)
     n <- nrow(X)
