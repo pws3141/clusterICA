@@ -58,19 +58,28 @@
 # calculate entropy using the m-spacing method
 .entropy <- function(x, m) {
     if(is.vector(x)) x <- matrix(x, nrow=1)
+    
     #TODO: remove this if statement + check error message
     if(ncol(x) == 1 && nrow(x) > 1) {
         # transpose matrx is 1 column
         # cat("assumed n = 1 and  p = ", nrow(x), "\n")
         x <- t(x)
     }
+
     # change to xt and remove t()
     x <- t(apply(x, 1, function(x) sort(x, method="radix")))
     n <- ncol(x)
     if(missing(m)) m <- floor(sqrt(n))
     
     d <- x[,(m+1):n, drop=FALSE] - x[,1:(n-m), drop=FALSE]
+    if(any(d < 0)) {
+        cat("Numerical error in sorting. 
+                Entropy set to that of a standard Gaussian, 
+                H = 0.5 * (log(2*pi) + 1)")
+        return(0.5 * (log(2*pi) + 1))
+    } else {
     apply(log(n * d / m), 1, sum) / n - digamma(m) + log(m)
+    }
     # TODO: change this s.t. NaN changed to something?
     # TODO: add 10e-10 or something
 }
