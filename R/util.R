@@ -58,26 +58,22 @@
 # calculate entropy using the m-spacing method
 .entropy <- function(x, m) {
     if(is.vector(x)) x <- matrix(x, nrow=1)
-    
-    #TODO: remove this if statement + check error message
-    if(ncol(x) == 1 && nrow(x) > 1) {
-        # transpose matrx is 1 column
-        # cat("assumed n = 1 and  p = ", nrow(x), "\n")
-        x <- t(x)
-    }
+    if(ncol(x) == 1 && nrow(x) > 1) stop("Require p > 1.")
 
     # change to xt and remove t()
-    x <- t(apply(x, 1, function(x) sort(x, method="radix")))
-    n <- ncol(x)
+    xt <- apply(x, 1, function(x) sort(x, method="radix"))
+    n <- nrow(xt)
     if(missing(m)) m <- floor(sqrt(n))
     
     # if numerical error in sort(), then output NA
-    d <- x[,(m+1):n, drop=FALSE] - x[,1:(n-m), drop=FALSE]
-    apply(d, 1, function(dd) {
+    d <- xt[(m+1):n,, drop=FALSE] - xt[1:(n-m),, drop=FALSE]
+    apply(d, 2, function(dd) {
         if (any(dd < 0)) {
+            warning("Entropy: Numerical error in sort, returning NA", 
+                call.=FALSE)
             NA
             } else {
-                sum(log(n * dd / m))
+                (1/n) * sum(log(n * dd / m))
             }
         }) - digamma(m) + log(m)
 }

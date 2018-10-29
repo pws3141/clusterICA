@@ -50,18 +50,16 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
     p <- ncol(X)
     n <- nrow(X)
 
-	i <- 0
+	i <- 1
 	c_curr <- rep(1, n)
 	rss_all <- .projective.wss(X=X, c=c_curr)	
 	wss <- rss_all$wss
-	if (missing(tol)) {
-		tol_wss <- 0.1 * wss
-		} else {
-			tol_wss <- tol *wss
-		}
+	if (missing(tol)) tol <- 0.1
+
 	rss_max <- which.max(rss_all$rss)
 	wss_all <- wss
-	while(wss > tol_wss & i < maxiter) {
+    diffc <- 1
+	while(diffc > tol & i < maxiter) {
 		i <- i + 1
 		# select cluster with largest rss 
 		# nb drop=F not needed as clust with only 1 element will not be picked
@@ -83,6 +81,7 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
 		rss_max <- which.max(rss_all$rss)
 		wss <- rss_all$wss
 		wss_all[i] <- wss
+        diffc <- (wss_all[i-1] - wss_all[i]) / wss_all[1]
 	}
 	if (i == maxiter) warning("Max iterations reached: increase maxiter or tol")
 
@@ -90,13 +89,13 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
     # TODO: don't bother with this?
 	if (any(rss_all$rss < 10e-16)) {
 		cat("Sparse or missing clusters. Tolerance increased to tol = ", 
-				tol + 0.1, "\n")
+				tol + 0.05, "\n")
 		rss_tmp <- rss_all$rss
 		while(any(rss_tmp < 10e-16)) {
-			tol <- tol + 0.1
+			tol <- tol + 0.05
 			out <- projective.divisive_clust(X=X, tol=tol, maxiter=maxiter)
 			rss_tmp <- out$rss_all$rss
-			if(!any(rss_tmp == 0)) return(out)
+			if(!any(rss_tmp < 10e-16)) return(out)
 		}
 	}
 	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all, tol=tol)
