@@ -71,17 +71,15 @@
     n <- ncol(x)
     if(missing(m)) m <- floor(sqrt(n))
     
+    # if numerical error in sort(), then output NA
     d <- x[,(m+1):n, drop=FALSE] - x[,1:(n-m), drop=FALSE]
-    if(any(d < 0)) {
-        cat("Numerical error in sorting. 
-                Entropy set to that of a standard Gaussian, 
-                H = 0.5 * (log(2*pi) + 1)")
-        return(0.5 * (log(2*pi) + 1))
-    } else {
-    apply(log(n * d / m), 1, sum) / n - digamma(m) + log(m)
-    }
-    # TODO: change this s.t. NaN changed to something?
-    # TODO: add 10e-10 or something
+    apply(d, 1, function(dd) {
+        if (any(dd < 0)) {
+            NA
+            } else {
+                sum(log(n * dd / m))
+            }
+        }) - digamma(m) + log(m)
 }
 
 # produce random directions, and choose the 'out' best directions
