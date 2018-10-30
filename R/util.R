@@ -203,7 +203,7 @@
                  function(w) {
                      w <- w / sqrt(sum(w^2))
                      w.orig.space <- IC %*% c(rep(0, k-1), w)
-                     z_proj <- z %*% w.orig.space
+                     z_proj <- t(z %*% w.orig.space)
                      .entropy(z_proj, m = m)
                  }, method = opt_method, control = list(maxit = maxit))
     

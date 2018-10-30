@@ -1,6 +1,33 @@
-
 # The following function is an implementation of the k-Means algorithm
-# on projective spaces.  PCA-part is used for the initial cluster assignments.
+# on projective spaces.  Kmeans++ is used for the initial cluster assignments.
+#' Kmeans clustering on the projective space
+#'
+#' Creates K clusters of points on the projective space using the k-means method
+#'
+#' @param X the data belonging to the projective space
+#' @param K the number of clusters required in output
+#' @param maxiter the maximum number of iterations
+#' @param initial (optional) the initial clustering. 
+#'                  If missing(K), then initial clusters found using the k-means++ method
+#' @param verbose gives information of completed clusters
+#'
+#' @return Vector of real numbers from 1 to K representing the cluster
+#'     that the corresponding X value belongs to.
+#'
+#'
+#' @author Jochen Voss, \email{Jochen.Voss@@leeds.ac.uk}
+#' @seealso \code{\link{projective.divisive_clust}}
+#' @keywords clustering, kmeans
+#'
+#' @examples
+#' n1 <- 37; n2 <- 19
+#' x1 <- rnorm(n1, 6); y1 <- rnorm(n1, 0); z1 <- rnorm(n1, 0, 0.1)
+#' x2 <- rnorm(n2, 8); y2 <- rnorm(n2, 8); z2 <- rnorm(n2, 0, 0.1)
+#' X <- rbind(cbind(x1, y1, z1), cbind(x2, y2, z2)) * sample(c(-1, 1), size=n1+n2, replace=TRUE)
+#' X <- X / sqrt(rowSums(X^2))
+#' (c <- projective.cluster(X, 2))
+#'
+#' @export
 projective.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
     n <- nrow(X)
     if(missing(initial)) {
@@ -41,9 +68,40 @@ projective.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
 }
 
 
-# clustering method using heirarchical divisive clustering
-# tolerance is a percentage of the total sum of squares
-# when total within-sum-of-squares hits this tol then breaks
+# clustering method using hierarchical divisive clustering
+# tolerance is a related to change in wihtin sum-of-squares (wss) with each iteration
+# when this change is less than the tolerance then break
+#' Divisive (hierarchical) clustering on the projective space
+#'
+#' Creates clusters of points on the projective space using divisive kmeans clustering
+#'
+#' @param X the data belonging to the projective space
+#' @param tol the tolerance that when reached, stops increasing the number of clusters. 
+#'                  At each step, the (change in wss) / (original wss) must be above this tolerance
+#' @param maxiter the maximum number of iterations
+#'
+#' @return A list with the following components:
+#'          \list{c} {Vector of real numbers from 1 to K representing the cluster
+#'                      that the corresponding X value belongs to.}
+#'          \list{rss}{Vector of the within sum-of-squares for each cluster}
+#'          \list{wss}{The total within sum-of-squares for the outputted cluster}
+#'          \list{wss_all}{The change in total within sum-of-squares for each 
+#'                              iteration of the function}
+#'
+#' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
+#' @seealso \code{\link{projective.cluster}}
+#' @keywords clustering, kmeans
+#'
+#' 
+#' @examples
+#' n1 <- 37; n2 <- 19
+#' x1 <- rnorm(n1, 6); y1 <- rnorm(n1, 0); z1 <- rnorm(n1, 0, 0.1)
+#' x2 <- rnorm(n2, 8); y2 <- rnorm(n2, 8); z2 <- rnorm(n2, 0, 0.1)
+#' X <- rbind(cbind(x1, y1, z1), cbind(x2, y2, z2)) * sample(c(-1, 1), size=n1+n2, replace=TRUE)
+#' X <- X / sqrt(rowSums(X^2))
+#' (c <- projective.divisive_clust(X=X, tol=0.1))
+#'
+#' @export
 projective.divisive_clust <- function(X, tol, maxiter=100) {
     stopifnot(tol > 0 && tol <= 1)
 
@@ -54,7 +112,10 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
 	c_curr <- rep(1, n)
 	rss_all <- .projective.wss(X=X, c=c_curr)	
 	wss <- rss_all$wss
-	if (missing(tol)) tol <- 0.1
+	if(wss == 0) {
+        return(list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=NA))
+    }
+    if (missing(tol)) tol <- 0.1
 
 	rss_max <- which.max(rss_all$rss)
 	wss_all <- wss
@@ -98,14 +159,79 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
 			if(!any(rss_tmp < 10e-16)) return(out)
 		}
 	}
-	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all, tol=tol)
+	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all)
 }
 
 # ICA function
-
-goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100,
+#' Approximate Independent Component Analysis (ICA) method
+#'
+#' Uses random directions, clustering and optimisation to obtain approximate ICA loadings,
+#'  using the m-spacing entropy approximation as the objective function to minimise
+#'
+#' @param x the data to perform ICA on, ncol(x) = n, nrow(x) = p
+#' @param xw (optional) the whitened version of x
+#' @param m (optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)
+#' @param num_loadings the number of ICA loadings outputted
+#' @param p (optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step
+#' @param rand_iter the number of random directions to initialise
+#' @param rand_out the number of the best random directions to keep
+#' @param seed (optional) the set.seed number used for initialising the random directions
+#' @param kmeans_tol the tolerance used in divisive clustering, see \code{\link[projective.divisive_clust]{tol}}
+#' @param kmeans_iter the maximum number of iterations used in divisive clustering, see \code{\link[projective.divisive_clust]{maxiter}}
+#' @param optim_maxit the maximum number of iterations used in the optimisation step, see \code{\link[optim]}
+#' @param opt_method the method used in the optimisation step, see \code{\link[optim]}
+#' @param size_clust (optional) if size_clust = k > 1, then optimisation is performed on k random directions in each cluster. 
+#'                      If missing, then optimisation is performed on the best direction in each cluster.
+#'
+#' @return A list with the following components:
+#'          \list{xw} {The output from jvmulti::whiten(x)}
+#'          \list{IC}{The matrix of the loading vectors for the whitened data}
+#'          \list{y}{The matrix of the projections of the whitened data along the loading vectors}
+#'          \list{entr}{The m-spacing entropy of each row of y}
+#'
+#' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
+# #' @seealso \code{\link{projective.cluster}}
+#' @keywords independent component analysis, entropy, clustering
+#'
+#' 
+#' @examples
+#' #---------------------------------------------------
+#' #Example 1: un-mixing two stratified independent normals
+#' #---------------------------------------------------
+#' p <- 2
+#' n <- 10000
+#' x1 <- matrix(rnorm(n*p, mean = 2.5), n, p)
+#' x1[,2] <- scale(x1[,2])
+#' a1 <- c(0,1)
+#' a1 <- a1 / sqrt(sum(a1^2))
+#' good1 <- cos(30 * x1 %*% a1) >= 0
+#' x1_good <- x1[which(good1),]
+#' x2 <- matrix(rnorm(n*p, mean = -2.5), n , p)
+#' x2[,2] <- scale(x2[,2])
+#' x2_good <- x2[which(good1),]
+#' x_good <- rbind(x1_good, x2_good)
+#' a <- goodICA(x=x_good, num_loadings=1)
+#' par(mfrow = c(1,3))
+#' plot(x_good, main = "Pre-processed data")
+#' plot(a$xw$y, main = "PCA components")
+#' plot(density(a$x, bw="sj"), main = "ICA components")
+#'
+#' #---------------------------------------------------
+#' #Example 2: un-mixing two mixed independent uniforms
+#' #From fastICA man page
+#' #---------------------------------------------------
+#' S <- matrix(runif(10000), 5000, 2)
+#' A <- matrix(c(1, 1, -1, 3), 2, 2, byrow = TRUE)
+#' X <- S %*% A
+#' a <- goodICA(X, p=2, rand_iter=1000, rand_out=50)
+#' par(mfrow = c(1, 3))
+#' plot(X, main = "Pre-processed data")
+#' plot(a$xw$y, main = "PCA components")
+#' plot(a$x, main = "ICA components")
+#' @export
+goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, seed, 
                     kmeans_tol=0.1, kmeans_iter=100,
-                    optim_maxit=1000, seed, opt_method="Nelder-Mead",
+                    optim_maxit=1000, opt_method="Nelder-Mead",
                     size_clust) {
     
     # check if we have whitened data
@@ -208,7 +334,7 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100,
 
     colnames(IC) <- paste0('IC', seq_len(num_loadings))
 
-    res <- list(xw=xw, x=z %*% IC, IC=IC, entr=entr, m=m)
+    res <- list(xw=xw, IC=IC, y=z %*% IC, entr=entr)
     class(res) = "goodICA"
     res
 }
