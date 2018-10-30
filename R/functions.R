@@ -1,3 +1,59 @@
+# calculate entropy using the m-spacing method
+#' Entropy approximation using the m-spacing method
+#'
+#' Calculates entropy using m-spacing, as in 
+#' Beirlant, Jan, et al. "Nonparametric entropy estimation: An overview."
+#'
+#' @param x the data, either a vector or matrix with columns 
+#'              representing dimension
+#' @param m (optional) the m-spacing. Defaults to m <- sqrt(nrow(x)) 
+#'              if missing
+#'
+#' @return Vector of real numbers corresponding to the approximate 
+#'              entropy for each row of input x.
+#'
+#'
+#' @author Paul Smith \& Jochen Voss, \email{mmpws@@leeds.ac.uk}
+#' @keywords entropy
+#'
+#' @examples
+#' X1 <- matrix(rnorm(150), ncol=15, nrow=10)
+#' X2 <- matrix(rnorm(150), ncol=10, nrow=15)
+#' X3 <- matrix(rnorm(1500), ncol=10, nrow=150)
+#' X4 <- matrix(rnorm(1500), ncol=100, nrow=15)
+#' X <- list(X1, X2, X3, X4)
+#' Xi.entr <- vector("list", length = length(X))
+#' for (i in 1:length(X)) {
+#'     Xi <- X[[i]] 
+#'     Xi.entr_mat <- .entropy(Xi)
+#'     Xi.entr[[i]] <- Xi.entr_mat
+#' }
+#' str(Xi.entr)
+
+#'
+#' @export
+entropy <- function(x, m) {
+    if(is.vector(x)) x <- matrix(x, nrow=1)
+    if(ncol(x) == 1 && nrow(x) > 1) stop("Require p > 1.")
+
+    # change to xt and remove t()
+    xt <- apply(x, 1, function(x) sort(x, method="radix"))
+    n <- nrow(xt)
+    if(missing(m)) m <- floor(sqrt(n))
+    
+    # if numerical error in sort(), then output NA
+    d <- xt[(m+1):n,, drop=FALSE] - xt[1:(n-m),, drop=FALSE]
+    apply(d, 2, function(dd) {
+        if (any(dd < 0)) {
+            warning("Entropy: Numerical error in sort, returning NA", 
+                call.=FALSE)
+            NA
+            } else {
+                (1/n) * sum(log(n * dd / m))
+            }
+        }) - digamma(m) + log(m)
+}
+
 # The following function is an implementation of the k-Means algorithm
 # on projective spaces.  Kmeans++ is used for the initial cluster assignments.
 #' Kmeans clustering on the projective space

@@ -55,28 +55,6 @@
     return(list(wss=wss, rss=wss_clust))
 }
 
-# calculate entropy using the m-spacing method
-.entropy <- function(x, m) {
-    if(is.vector(x)) x <- matrix(x, nrow=1)
-    if(ncol(x) == 1 && nrow(x) > 1) stop("Require p > 1.")
-
-    # change to xt and remove t()
-    xt <- apply(x, 1, function(x) sort(x, method="radix"))
-    n <- nrow(xt)
-    if(missing(m)) m <- floor(sqrt(n))
-    
-    # if numerical error in sort(), then output NA
-    d <- xt[(m+1):n,, drop=FALSE] - xt[1:(n-m),, drop=FALSE]
-    apply(d, 2, function(dd) {
-        if (any(dd < 0)) {
-            warning("Entropy: Numerical error in sort, returning NA", 
-                call.=FALSE)
-            NA
-            } else {
-                (1/n) * sum(log(n * dd / m))
-            }
-        }) - digamma(m) + log(m)
-}
 
 # produce random directions, and choose the 'out' best directions
 # best directions are those that minimise entropy
@@ -111,7 +89,7 @@
     trials.orig.space <- trials_mat %*% t(IC[,k:p])
     # switch to columns for each trial so that entr works
     trials.proj <- trials.orig.space %*% t(z)
-    entr <- .entropy(trials.proj, m=m)
+    entr <- entropy(trials.proj, m=m)
 
     dir.table <- cbind(entr, trials_mat)
     # arange in order
@@ -183,7 +161,7 @@
                 # calc entropy of centre
                 centre.orig.space <- centre %*% t(IC[,k:p])
                 centre.proj <- centre.orig.space %*% t(z)
-                entr <- .entropy(centre.proj, m=m)
+                entr <- entropy(centre.proj, m=m)
                 out_tmp[[i]]$entr <- entr
             }
         }
@@ -204,7 +182,7 @@
                      w <- w / sqrt(sum(w^2))
                      w.orig.space <- IC %*% c(rep(0, k-1), w)
                      z_proj <- t(z %*% w.orig.space)
-                     .entropy(z_proj, m = m)
+                     entropy(z_proj, m = m)
                  }, method = opt_method, control = list(maxit = maxit))
     
     if (opt$convergence == 1) {
