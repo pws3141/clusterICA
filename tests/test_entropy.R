@@ -1,5 +1,4 @@
 library(goodICA)
-library(tictoc)
 
 generate.data <- function(n1, n2, d) {
     x1 <- rnorm(n1, d)
@@ -42,13 +41,13 @@ test.method <- function(fn) {
     print(res)
 }
 
-test.method(function(X) .entropy(X))
+test.method(function(X) entropy(X))
 
 
 # Q: why does this produce NaN but with rep(0,100), everything's OK?
 set.seed(1234)
 X <- matrix(rep(-4:5,by=1,each=100) + rnorm(1000, sd=10e-12), ncol=100, byrow=TRUE)
-.entropy(X)
+entropy(X)
 
 # check that matrix = rbind() gives same as indivdual inputs
 X1 <- matrix(rnorm(150), ncol=15, nrow=10)
@@ -61,9 +60,9 @@ X6 <- matrix(rnorm(15000), ncol=1000, nrow=15)
 X <- list(X1, X2, X3, X4, X5, X6)
 for (i in 1:length(X)) {
     Xi <- X[[i]] 
-    Xi.entr_mat <- .entropy(Xi)
+    Xi.entr_mat <- entropy(Xi)
     for (j in 1:nrow(Xi)) {
-        Xi.entrr <- .entropy(Xi[j,])
+        Xi.entrr <- entropy(Xi[j,])
         stopifnot(Xi.entrr == Xi.entr_mat[j])
     }
 }
@@ -73,12 +72,12 @@ for (i in 1:length(X)) {
 # use m <- sqrt(n)
 entrm <- numeric()
 iter <- 100
-for (i in 1:200) {
+for (i in 1:100) {
     iter[i+1] <- 1.05*iter[i]
     mm <- floor(sqrt(iter[i+1]))
     set.seed(10)
     Xx <- rnorm(iter[i+1])
-    entrm[i] <- .entropy(Xx, m = 3)
+    entrm[i] <- entropy(Xx, m = 3)
 }
 plot(iter[-1], entrm, type ="l", log='x', ylim=c(1,1.42))
 
@@ -87,16 +86,16 @@ plot(iter[-1], entrm, type ="l", log='x', ylim=c(1,1.42))
 entrm <- numeric()
 var_all <- numeric()
 iter <- 1000
-len_mm <- 150
+len_mm <- 100
 mm <- seq(from = log(3)/log(iter), to = 0.9, length = len_mm)
 for (j in 1:len_mm) {
     varm <- numeric()
     for (k in 1:50) {
         mm_tmp <- floor(iter^mm[j])
-        for (i in 1:100) {
+        for (i in 1:50) {
             set.seed(k*(13420 + i*iter))
             Xx <- rnorm(iter)
-            entrm[i] <- .entropy(Xx, m = mm_tmp)
+            entrm[i] <- entropy(Xx, m = mm_tmp)
         }
         varm[k] <- var(entrm)
     }
@@ -111,9 +110,9 @@ plot(x=mm, var_all, t="l")
 # different m's
 # larger m's //seem to// make entropy less accurate
 # but smooth out local minima
-Xx1 <- rnorm(10000)
-Xx2 <- runif(10000)
-Xx3 <- rgamma(10000, shape=0.4)
+Xx1 <- rnorm(1000)
+Xx2 <- runif(1000)
+Xx3 <- rgamma(1000, shape=0.4)
 Xx <- rbind(Xx1, Xx2, Xx3)
 Xx <- t(apply(Xx, 1, function(x) scale(x, scale=TRUE)))
 par(mfrow = c(3,1))
@@ -121,7 +120,7 @@ for (i in 1:3) {
 Xm <- numeric()
 Xxx <- Xx[i,]
     for (j in 2:(length(Xxx) - 3)) {
-        Xm[j-1] <- .entropy(Xxx, m=j)
+        Xm[j-1] <- entropy(Xxx, m=j)
         #if (j/100 == floor(j/100)) cat(j)
     }
     plot(x = 2:(length(Xxx) - 3), y = Xm, type = "b")

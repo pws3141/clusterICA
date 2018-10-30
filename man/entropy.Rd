@@ -30,7 +30,7 @@ X <- list(X1, X2, X3, X4)
 Xi.entr <- vector("list", length = length(X))
 for (i in 1:length(X)) {
     Xi <- X[[i]] 
-    Xi.entr_mat <- .entropy(Xi)
+    Xi.entr_mat <- entropy(Xi)
     Xi.entr[[i]] <- Xi.entr_mat
 }
 str(Xi.entr)

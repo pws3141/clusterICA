@@ -35,10 +35,10 @@ X <- X / sqrt(rowSums(X^2))
 
 }
 \seealso{
-\code{\link{projective.divisive_clust}}
+projective.divisive_clust()
 }
 \author{
 Jochen Voss, \email{Jochen.Voss@leeds.ac.uk}
 }
-\keyword{clustering,}
+\keyword{clustering}
 \keyword{kmeans}

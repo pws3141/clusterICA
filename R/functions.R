@@ -26,7 +26,7 @@
 #' Xi.entr <- vector("list", length = length(X))
 #' for (i in 1:length(X)) {
 #'     Xi <- X[[i]] 
-#'     Xi.entr_mat <- .entropy(Xi)
+#'     Xi.entr_mat <- entropy(Xi)
 #'     Xi.entr[[i]] <- Xi.entr_mat
 #' }
 #' str(Xi.entr)
@@ -73,8 +73,8 @@ entropy <- function(x, m) {
 #'
 #'
 #' @author Jochen Voss, \email{Jochen.Voss@@leeds.ac.uk}
-#' @seealso \code{\link{projective.divisive_clust}}
-#' @keywords clustering, kmeans
+#' @seealso projective.divisive_clust()
+#' @keywords clustering kmeans
 #'
 #' @examples
 #' n1 <- 37; n2 <- 19
@@ -138,15 +138,16 @@ projective.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
 #' @param maxiter the maximum number of iterations
 #'
 #' @return A list with the following components:
-#'          \list{c} {Vector of real numbers from 1 to K representing the cluster
+#' \itemize{
+#'          \item{c} {Vector of real numbers from 1 to K representing the cluster
 #'                      that the corresponding X value belongs to.}
-#'          \list{rss}{Vector of the within sum-of-squares for each cluster}
-#'          \list{wss}{The total within sum-of-squares for the outputted cluster}
-#'          \list{wss_all}{The change in total within sum-of-squares for each 
+#'          \item{rss}{Vector of the within sum-of-squares for each cluster}
+#'          \item{wss}{The total within sum-of-squares for the outputted cluster}
+#'          \item{wss_all}{The change in total within sum-of-squares for each 
 #'                              iteration of the function}
-#'
+#' }
 #' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
-#' @seealso \code{\link{projective.cluster}}
+#' @seealso projective.cluster
 #' @keywords clustering, kmeans
 #'
 #' 
@@ -233,21 +234,23 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
 #' @param rand_iter the number of random directions to initialise
 #' @param rand_out the number of the best random directions to keep
 #' @param seed (optional) the set.seed number used for initialising the random directions
-#' @param kmeans_tol the tolerance used in divisive clustering, see \code{\link[projective.divisive_clust]{tol}}
-#' @param kmeans_iter the maximum number of iterations used in divisive clustering, see \code{\link[projective.divisive_clust]{maxiter}}
-#' @param optim_maxit the maximum number of iterations used in the optimisation step, see \code{\link[optim]}
-#' @param opt_method the method used in the optimisation step, see \code{\link[optim]}
+#' @param kmeans_tol the tolerance used in divisive clustering, see projective.divisive_clust
+#' @param kmeans_iter the maximum number of iterations used in divisive clustering, see projective.divisive_clust
+#' @param optim_maxit the maximum number of iterations used in the optimisation step, see optim
+#' @param opt_method the method used in the optimisation step, see optim
 #' @param size_clust (optional) if size_clust = k > 1, then optimisation is performed on k random directions in each cluster. 
 #'                      If missing, then optimisation is performed on the best direction in each cluster.
 #'
 #' @return A list with the following components:
-#'          \list{xw} {The output from jvmulti::whiten(x)}
-#'          \list{IC}{The matrix of the loading vectors for the whitened data}
-#'          \list{y}{The matrix of the projections of the whitened data along the loading vectors}
-#'          \list{entr}{The m-spacing entropy of each row of y}
+#'         \itemize{
+#'              \item{xw} {The output from jvmulti::whiten(x)}
+#'              \item{IC}{The matrix of the loading vectors for the whitened data}
+#'              \item{y}{The matrix of the projections of the whitened data along the loading vectors}
+#'              \item{entr}{The m-spacing entropy of each row of y}
+#'          }
 #'
 #' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
-# #' @seealso \code{\link{projective.cluster}}
+# #' @seealso projective.cluster()
 #' @keywords independent component analysis, entropy, clustering
 #'
 #' 

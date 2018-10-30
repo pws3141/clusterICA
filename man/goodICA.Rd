@@ -25,23 +25,25 @@ goodICA(x, xw, m, num_loadings, p, rand_iter = 5000, rand_out = 100,
 
 \item{seed}{(optional) the set.seed number used for initialising the random directions}
 
-\item{kmeans_tol}{the tolerance used in divisive clustering, see \code{\link[projective.divisive_clust]{tol}}}
+\item{kmeans_tol}{the tolerance used in divisive clustering, see projective.divisive_clust}
 
-\item{kmeans_iter}{the maximum number of iterations used in divisive clustering, see \code{\link[projective.divisive_clust]{maxiter}}}
+\item{kmeans_iter}{the maximum number of iterations used in divisive clustering, see projective.divisive_clust}
 
-\item{optim_maxit}{the maximum number of iterations used in the optimisation step, see \code{\link[optim]}}
+\item{optim_maxit}{the maximum number of iterations used in the optimisation step, see optim}
 
-\item{opt_method}{the method used in the optimisation step, see \code{\link[optim]}}
+\item{opt_method}{the method used in the optimisation step, see optim}
 
 \item{size_clust}{(optional) if size_clust = k > 1, then optimisation is performed on k random directions in each cluster. 
 If missing, then optimisation is performed on the best direction in each cluster.}
 }
 \value{
 A list with the following components:
-         \list{xw} {The output from jvmulti::whiten(x)}
-         \list{IC}{The matrix of the loading vectors for the whitened data}
-         \list{y}{The matrix of the projections of the whitened data along the loading vectors}
-         \list{entr}{The m-spacing entropy of each row of y}
+        \itemize{
+             \item{xw} {The output from jvmulti::whiten(x)}
+             \item{IC}{The matrix of the loading vectors for the whitened data}
+             \item{y}{The matrix of the projections of the whitened data along the loading vectors}
+             \item{entr}{The m-spacing entropy of each row of y}
+         }
 }
 \description{
 Uses random directions, clustering and optimisation to obtain approximate ICA loadings,

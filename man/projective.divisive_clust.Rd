@@ -16,12 +16,14 @@ At each step, the (change in wss) / (original wss) must be above this tolerance}
 }
 \value{
 A list with the following components:
-         \list{c} {Vector of real numbers from 1 to K representing the cluster
+\itemize{
+         \item{c} {Vector of real numbers from 1 to K representing the cluster
                      that the corresponding X value belongs to.}
-         \list{rss}{Vector of the within sum-of-squares for each cluster}
-         \list{wss}{The total within sum-of-squares for the outputted cluster}
-         \list{wss_all}{The change in total within sum-of-squares for each 
+         \item{rss}{Vector of the within sum-of-squares for each cluster}
+         \item{wss}{The total within sum-of-squares for the outputted cluster}
+         \item{wss_all}{The change in total within sum-of-squares for each 
                              iteration of the function}
+}
 }
 \description{
 Creates clusters of points on the projective space using divisive kmeans clustering
@@ -36,7 +38,7 @@ X <- X / sqrt(rowSums(X^2))
 
 }
 \seealso{
-\code{\link{projective.cluster}}
+projective.cluster
 }
 \author{
 Paul Smith, \email{mmpws@leeds.ac.uk}
