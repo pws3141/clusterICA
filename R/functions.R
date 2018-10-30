@@ -14,6 +14,7 @@
 #'
 #'
 #' @author Paul Smith \& Jochen Voss, \email{mmpws@@leeds.ac.uk}
+#' @references \url{https://www.researchgate.net/profile/Jan_Beirlant/publication/243768404_Nonparametric_Entropy_Estimation_An_Overview/links/0046352937863d9023000000/Nonparametric-Entropy-Estimation-An-Overview.pdf}
 #' @keywords entropy
 #'
 #' @examples

@@ -20,3 +20,4 @@ Imports:
 License: GPL-3
 Encoding: UTF-8
 NeedsCompilation: no
+RoxygenNote: 6.1.0
