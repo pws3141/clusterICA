@@ -69,7 +69,7 @@ projective.cluster <- function(X, K, maxiter=100, initial, verbose=TRUE) {
 
 
 # clustering method using hierarchical divisive clustering
-# tolerance is a related to change in wihtin sum-of-squares (wss) with each iteration
+# tolerance is a related to change in within sum-of-squares (wss) with each iteration
 # when this change is less than the tolerance then break
 #' Divisive (hierarchical) clustering on the projective space
 #'
@@ -214,7 +214,7 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
 #' par(mfrow = c(1,3))
 #' plot(x_good, main = "Pre-processed data")
 #' plot(a$xw$y, main = "PCA components")
-#' plot(density(a$x, bw="sj"), main = "ICA components")
+#' plot(density(a$y, bw="sj"), main = "ICA components")
 #'
 #' #---------------------------------------------------
 #' #Example 2: un-mixing two mixed independent uniforms
@@ -227,7 +227,7 @@ projective.divisive_clust <- function(X, tol, maxiter=100) {
 #' par(mfrow = c(1, 3))
 #' plot(X, main = "Pre-processed data")
 #' plot(a$xw$y, main = "PCA components")
-#' plot(a$x, main = "ICA components")
+#' plot(a$y, main = "ICA components")
 #' @export
 goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, seed, 
                     kmeans_tol=0.1, kmeans_iter=100,
