@@ -4,7 +4,7 @@
 # Choose one new data point at random as a new center, using a weighted probability distribution where a point x is chosen with probability proportional to D(x)2.
 # Repeat Steps 2 and 3 until k centers have been chosen.
 # Now that the initial centers have been chosen, proceed using standard k-means clustering.
-.projective.plusplus <- function(X, K) {
+.cluster.proj.plusplus <- function(X, K) {
     n <- nrow(X)
     p <- ncol(X)
 
@@ -21,10 +21,55 @@
     apply(dist, 1, which.min)
 }
 
+.cluster.proj.kmeans <- function(X, K, iter.max=100, initial, verbose=TRUE) {
+    n <- nrow(X)
+    if(missing(initial)) {
+        c <- .cluster.proj.plusplus(X, K)
+        } else {
+            # set cluster s.t. they start at 1
+            if(!min(initial) == 1) initial <- initial - min(initial) + 1
+            if (!(length(initial) == n)) {
+                warning("'initial' must be of length n = ", 
+                            n, ". Initialising using kmeans++ instead.")
+                if(missing(K)) K <- max(initial)
+                initial <- .cluster.proj.plusplus(X, K)    
+            } # end if
+            c <- initial
+            K <- max(c)
+        } # end else
+    
+    j <- 0
+    for (i in 1:iter.max) {
+        j <- j + 1
+        dist <- matrix(0, nrow=n, ncol=K)
+        for (k in 1:K) {
+            Y <- X[c == k,, drop=FALSE]
+            # need to change this so that the clust mean changes...
+            # don't want empty clustering
+            if(!(nrow(Y) == 0)) {
+                s <- La.svd(Y, nu=0, nv=1)
+                centre <- s$vt[1,]
+                dist[, k] <- 1 - (X %*% centre)^2
+            }
+
+        }
+        c.old <- c
+        c <- apply(dist, 1, which.min)
+
+        if (all(c.old == c)) {
+            break
+        }
+    }
+    if(verbose == TRUE) {
+        if(j < iter.max) cat("Converged to ", K, " clusters in ", j, " iterations \n")
+        if(j == iter.max) cat("Maximum iterations of ", iter.max, " used, consider increasing iter.max \n")
+    }
+    c
+}
 
 # find total sum of squares and
 # within cluster sum-of-squares
-.projective.wss <- function(X, c) {
+.cluster.proj.wss <- function(X, c) {
     K <- max(c)
     p <- ncol(X)
     n <- nrow(X)
@@ -41,7 +86,10 @@
         ticker[c_tmp] <- ticker[c_tmp] + 1
         clust[[c_tmp]][ticker[c_tmp],] <- X[i,]
     }
-    wss_clust <- sapply(clust, function(x) {
+    if (K == 1) {
+
+    }
+    wss_clust <- unlist(sapply(clust, function(x) {
         n_tmp <- nrow(x)
         # TODO: make this if statement redundant. Don't want empty clusters
         if(n_tmp == 0) {
@@ -49,8 +97,14 @@
         } else {
             s <- La.svd(x, nu=0, nv=1)
             SSE <- n_tmp - s$d[1]^2
+            # stop numerical error if s$d[1]^2 v. close to n_tmp
+            #if(SSE < 0) {SSE <- 0}
         }
-    })
+        }))
+    if(any(wss_clust < 0)) {
+        which_wss <- which(wss_clust < 0)
+        wss_clust[which_wss] <- 0
+    }
     wss <- sum(wss_clust)
     return(list(wss=wss, rss=wss_clust))
 }
@@ -118,7 +172,7 @@
 
 
 # put random directions into clusters
-# uses divisive kmeans clustering from projective.divisive_clust
+# uses divisive kmeans clustering from cluster.proj.divisive
 .cluster.norm <- function(z, IC, k, m, dirs, kmeans_tol=0.1,
                          kmeans_iter=100, save.all=FALSE, clust_avg=FALSE) {
     # convert dirs to listrbose=
@@ -136,7 +190,7 @@
     # list of clusters
 
     # K-Means Cluster Analysis: Divisive
-    c <- projective.divisive_clust(X=dirs, tol=kmeans_tol, maxiter=kmeans_iter)
+    c <- cluster.proj.divisive(X=dirs, tol=kmeans_tol, iter.max=kmeans_iter)
     clusters <- max(c$c)
     
     # append cluster assignment & put into list

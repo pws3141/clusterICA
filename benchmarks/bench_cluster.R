@@ -41,5 +41,5 @@ test.method <- function(fn) {
     print(res)
 }
 
-test.method(function(X) projective.cluster(X, 3, verbose = FALSE))
-test.method(function(X) projective.divisive_clust(X, tol=.1))
+test.method(function(X) cluster.proj.kmeans(X, 3))
+test.method(function(X) cluster.proj.divisive(X, tol=.1))

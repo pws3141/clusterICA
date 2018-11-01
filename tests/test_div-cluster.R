@@ -42,14 +42,14 @@ test.method <- function(fn) {
     print(res)
 }
 
-test.method(function(X) projective.divisive_clust(X, tol=0.1))
+test.method(function(X) cluster.proj.divisive(X, tol=0.1))
 
 #######
 
 par(mfrow = c(2,2))
 for (i in 1:4) {
 	X1 <- generate.data(276, 89, 6)
-	c <- projective.divisive_clust(X1, tol=0.1)
+	c <- cluster.proj.divisive(X1, tol=0.1)
 
 	diffc <- c$wss_all[-length(c$wss_all)] - c$wss_all[-1]
 	plot(diffc / c$wss_all[1])
