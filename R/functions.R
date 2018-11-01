@@ -231,7 +231,7 @@ cluster.proj.divisive <- function(X, tol, iter.max=100) {
 #' good2 <- cos(20 * x2 %*% a1) >= 0
 #' x2_good <- x2[which(good2),]
 #' x_good <- rbind(x1_good, x2_good)
-#' a <- goodICA(x=x_good, num_loadings=1, rand_iter=1000, seed=5)
+#' a <- clusterICA(x=x_good, num_loadings=1, rand_iter=1000, seed=5)
 #' par(mfrow = c(1,3))
 #' plot(x_good, main = "Pre-processed data")
 #' plot(a$xw$y, main = "Whitened data")
@@ -244,13 +244,20 @@ cluster.proj.divisive <- function(X, tol, iter.max=100) {
 #' S <- matrix(runif(10000), 5000, 2)
 #' A <- matrix(c(1, 1, -1, 3), 2, 2, byrow = TRUE)
 #' X <- S %*% A
-#' a <- goodICA(X, p=2, rand_iter=1000, rand_out=50)
+#' a <- clusterICA(X, p=2, rand_iter=1000, rand_out=50)
 #' par(mfrow = c(1, 3))
 #' plot(X, main = "Pre-processed data")
 #' plot(a$xw$y, main = "Whitened data")
 #' plot(a$y, main = "ICA components")
+#'
+#' #---------------------------------------------------
+#' #Example 3: un-mixing iris data
+#' #---------------------------------------------------
+#' a <- clusterICA(iris[,1:4])
+#' plot(a$y, main = "ICA components")
+#' pairs(a$y, col=iris$Species)
 #' @export
-goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, seed, 
+clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, seed, 
                     kmeans_tol=0.1, kmeans_iter=100,
                     optim_maxit=1000, opt_method="Nelder-Mead",
                     size_clust) {
@@ -357,6 +364,6 @@ goodICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, see
     rownames(IC) <- rownames(xw$loadings)
 
     res <- list(xw=xw, IC=IC, y=z %*% IC, entr=entr)
-    class(res) = "goodICA"
+    class(res) = "clusterICA"
     res
 }

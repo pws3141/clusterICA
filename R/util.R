@@ -226,7 +226,7 @@
 
 # optimise each direction
 # here dir is a single direction (vector)
-# cluster arg only used for cat() in goodICA
+# cluster arg only used for cat() in clusterICA
 .dir.optim <- function(z, IC, k, m, dirs, maxit=1000, 
                         cluster, opt_method="Nelder-Mead") {
     n <- ncol(z)
@@ -326,8 +326,8 @@
     }
 }
 
-# for class goodICA
-print.goodICA <- function(x, ...) {
+# for class clusterICA
+print.clusterICA <- function(x, ...) {
     loadings <- ncol(x$IC)
     length <- nrow(x$IC)
     entr1 <- round(x$entr[1], digits = 5)
