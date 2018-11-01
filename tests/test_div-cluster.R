@@ -1,4 +1,4 @@
-library(goodICA)
+library(clusterICA)
 
 generate.data <- function(n1, n2, d) {
     x1 <- rnorm(n1, d)

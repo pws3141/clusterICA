@@ -113,9 +113,9 @@ len_mm <- 100
 mm <- seq(from = log(3)/log(iter), to = 0.99, length = len_mm)
 varm <- vector("list", length=len_mm)
 for (k in 1:len_mm) {
-    mm_tmp <- floor(seqrt(iter))
-    for (i in 1:50) {
-        set.seed(k*(13234420 + i*iter))
+    mm_tmp <- floor(iter^mm[k])
+    for (i in 1:100) {
+        set.seed(k*(14420 + i*iter))
         Xx <- rgamma(iter, shape = 0.5)
         entrm[i] <- entropy(Xx, m = mm_tmp)
     }
@@ -125,7 +125,10 @@ for (k in 1:len_mm) {
 plot(density(varm[[1]], bw="sj"))
 points(density(varm[[20]], bw="sj"), t="l", col="red")
 points(density(varm[[42]], bw="sj"), t="l", col="green")
-points(density(varm[[100]], bw="sj"), t="l", col="blue")
+points(density(varm[[80]], bw="sj"), t="l", col="blue")
+xx <- 1:len_mm
+yy <- sapply(xx, function(i) var(varm[[i]]))
+plot(xx, yy, type="l")
 
 
 # different m's
