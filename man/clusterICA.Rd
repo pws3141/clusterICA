@@ -6,7 +6,7 @@
 \usage{
 clusterICA(x, xw, m, num_loadings, p, rand_iter = 5000, rand_out = 100,
   seed, kmeans_tol = 0.1, kmeans_iter = 100, optim_maxit = 1000,
-  opt_method = "Nelder-Mead", size_clust)
+  opt_method = "Nelder-Mead", size_clust, verbose = FALSE)
 }
 \arguments{
 \item{x}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
@@ -35,6 +35,8 @@ clusterICA(x, xw, m, num_loadings, p, rand_iter = 5000, rand_out = 100,
 
 \item{size_clust}{(optional) if size_clust = k > 1, then optimisation is performed on k random directions in each cluster. 
 If missing, then optimisation is performed on the best direction in each cluster.}
+
+\item{verbose}{if TRUE then information is given on the status of the function}
 }
 \value{
 A list with the following components:

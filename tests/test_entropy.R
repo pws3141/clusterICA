@@ -110,7 +110,7 @@ plot(x=mm, var_all, t="l")
 entrm <- numeric()
 iter <- 1000
 len_mm <- 100
-mm <- seq(from = log(3)/log(iter), to = 0.99, length = len_mm)
+mm <- seq(from = 0, to = 0.99, length = len_mm)
 varm <- vector("list", length=len_mm)
 for (k in 1:len_mm) {
     mm_tmp <- floor(iter^mm[k])

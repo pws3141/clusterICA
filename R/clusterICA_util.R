@@ -5,9 +5,6 @@
 .rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
     p <- ncol(z)
     n <- nrow(z)
-    if(missing(m)) m <- floor(sqrt(n))
-    if(missing(k)) k <- 1
-    if(missing(IC)) IC <- diag(p)
     r <- p - k + 1 # the dimension of the search space
 
     if (!missing(seed)) set.seed(seed)
@@ -66,16 +63,10 @@
     # convert dirs to listrbose=
     p <- ncol(z)
     n <- nrow(z)
-    if(missing(m)) m <- floor(sqrt(n))
-    if(missing(IC)) IC <- diag(p)
-    if(missing(k)) k <- 1
 
-    #stopifnot(p == ncol(dirs))
     entr <- dirs$entr
     dirs <- dirs$dirs
     dirs.list <- lapply(seq_len(nrow(dirs)), function(i) dirs[i,])
-
-    # list of clusters
 
     # K-Means Cluster Analysis: Divisive
     c <- cluster.proj.divisive(X=dirs, tol=kmeans_tol, iter.max=kmeans_iter)
@@ -96,6 +87,7 @@
         } else {
             out_tmp[[i]]$entr <- dirs.cluster_append[which.cluster, 2]
             out_tmp[[i]]$dirs <- dirs.cluster_append[which.cluster, c(-1, -2)]
+            #TODO: Remove clust_avg?
             if (clust_avg == TRUE) {
                 s <- La.svd(out_tmp[[i]]$dirs, nu=0, nv=1)
                 centre <- s$vt[1,]
@@ -147,21 +139,23 @@
 # input is from .cluster.norm
 .ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
                          opt_method="Nelder-Mead", size_clust,
-                         clust_avg=FALSE) {
+                         clust_avg=FALSE, verbose=FALSE) {
     n <- nrow(z)
     p <- ncol(z)
-    if(missing(m)) m <- floor(sqrt(n))
-    if(missing(IC)) IC <- diag(p)
-    if(missing(k)) k <- 1
 
     clusters <- length(best_dirs)
-    cat("////Optimising direction of projection on ", clusters, " clusters \n")
+    if (verbose == TRUE) {
+        cat("////Optimising direction of projection on ", 
+                clusters, " clusters \n")
+    }
 
     dir_opt <- matrix(nrow = clusters, ncol = (p  - k + 1 + 1))
     dir_opt_many <- vector(mode="list", length=clusters)
     nn <- numeric()
     for(i in 1:clusters) {
-        cat("//// Optimising cluster ", i, "\n")
+        if (verbose == TRUE) {
+            cat("//// Optimising cluster ", i, "\n")
+        }
         dir_tmp <- best_dirs[[i]]
         n_tmp <- length(dir_tmp$entr)
         nn[i] <- n_tmp
@@ -215,6 +209,7 @@
 }
 
 # for class clusterICA
+#' @export
 print.clusterICA <- function(x, ...) {
     loadings <- ncol(x$IC)
     length <- nrow(x$IC)

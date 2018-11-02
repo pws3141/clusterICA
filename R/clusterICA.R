@@ -18,7 +18,7 @@
 #' @param opt_method the method used in the optimisation step, see optim
 #' @param size_clust (optional) if size_clust = k > 1, then optimisation is performed on k random directions in each cluster. 
 #'                      If missing, then optimisation is performed on the best direction in each cluster.
-#'
+#' @param verbose if TRUE then information is given on the status of the function 
 #' @return A list with the following components:
 #'         \itemize{
 #'              \item{xw} {The output from jvmulti::whiten(x)}
@@ -79,7 +79,7 @@
 clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, seed, 
                     kmeans_tol=0.1, kmeans_iter=100,
                     optim_maxit=1000, opt_method="Nelder-Mead",
-                    size_clust) {
+                    size_clust, verbose=FALSE) {
     
     # check if we have whitened data
     # here p is how many PCA loadings we use to do ICA on
@@ -116,16 +116,24 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
     entr <- numeric()
     IC <- diag(p)
     for(k in 1:num_loadings) {
-        cat("optimising direction", k, "out of", num_loadings, "\n")
+        if (verbose == TRUE) {
+            cat("optimising direction", k, "out of", num_loadings, "\n")
+        }
         r <- p - k + 1 # the dimension of the search space
         
-        cat("// Finding random starting points", "\n")
+        if (verbose == TRUE) {
+            cat("// Finding random starting points", "\n")
+        }
         rand_dir <- .rand.dirs(z=z, IC=IC, k=k, m=m, iter=rand_iter, out=rand_out,
                               seed=seed)
-        cat("/// Found ", length(rand_dir$entr), " starting directions", "\n", 
+        if (verbose == TRUE) {
+            cat("/// Found ", length(rand_dir$entr), " starting directions", "\n", 
             sep="")
+        }
         
-        cat("/// Sorting these into clusters \n")
+        if (verbose == TRUE) {
+            cat("/// Sorting these into clusters \n")
+        }
         # do we want to save all directions in each cluster,
         # or just the best (pre-optim)
         if(!missing(size_clust) && size_clust < 1 && size_clust > -1) {
@@ -147,25 +155,35 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
                                       kmeans_iter=kmeans_iter)
         }
 
-        cat("//// Sorted into ", length(best_dirs), " clusters", "\n", sep="")
+        if (verbose == TRUE) {
+            cat("//// Sorted into ", length(best_dirs), " clusters", "\n", sep="")
+        }
         entr.pre_optim <- unlist(sapply(best_dirs, function(x) x$entr))
-        cat("//// Best pre-optim entropy = ", min(entr.pre_optim), "\n", sep="")
+        if (verbose == TRUE) {
+            cat("//// Best pre-optim entropy = ", min(entr.pre_optim), "\n", sep="")
+        }
         
         # step 2: use local optimisation to find the best solution in the
         # each cluster
-        cat("//// Optimising ", length(best_dirs), " clusters", "\n", sep="")
+        if (verbose == TRUE) {
+            cat("//// Optimising ", length(best_dirs), " clusters", "\n", sep="")
+        }
         ica_loading <- .ica.clusters(z=z, IC=IC, k=k, m=m,
                                     best_dirs=best_dirs, maxit = optim_maxit,
                                     opt_method=opt_method, size_clust=size_clust)
         if(!missing(size_clust) && (size_clust > 1)) {
             ica_loading <- ica_loading$best
         }
-        cat("//// Optimised direction has entropy ", 
+        if (verbose == TRUE) {
+            cat("//// Optimised direction has entropy ", 
                 ica_loading$dir_entr, "\n", sep="")
+        }
         best_entr <- ica_loading$dir_entr
         best_dir <- ica_loading$dir_optim
 
-        cat("///// Householder reflection", "\n")
+        if (verbose == TRUE) {
+            cat("///// Householder reflection", "\n")
+        }
         # Use a Householder reflection which maps e1 to best.dir to update IC.
         e1 <- c(1, rep(0, r-1))
         # from wiki: take sign of x_k s.t.
