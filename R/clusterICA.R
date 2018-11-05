@@ -170,7 +170,7 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
         }
         ica_loading <- .ica.clusters(z=z, IC=IC, k=k, m=m,
                                     best_dirs=best_dirs, maxit = optim_maxit,
-                                    opt_method=opt_method, size_clust=size_clust)
+                                    opt_method=opt_method, verbose=verbose, size_clust=size_clust)
         if(!missing(size_clust) && (size_clust > 1)) {
             ica_loading <- ica_loading$best
         }
