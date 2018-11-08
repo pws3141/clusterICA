@@ -33,17 +33,14 @@
 #' str(Xi.entr)
 #'
 #' @export
-entropy <- function(x, m=floor(sqrt(c(length(x), ncol(x))))) {
-    if(is.vector(x)) {
-        x <- matrix(x, nrow=1)
-        m <- m[1]
-        } 
-    if(length(m) == 2) m <- m[2]
+entropy <- function(x, m) {
+    if(is.vector(x)) x <- matrix(x, nrow=1)
     if(ncol(x) == 1) stop("require p > 1")
 
     # change to xt
     xt <- apply(x, 1, function(x) sort(x))
     n <- nrow(xt)
+    if(missing(m)) m <- floor(sqrt(n))
     
     d <- xt[(m+1):n,, drop=FALSE] - xt[1:(n-m),, drop=FALSE]
     apply(d, 2, function(dd) {

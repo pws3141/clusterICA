@@ -21,7 +21,7 @@
 #' @param verbose if TRUE then information is given on the status of the function 
 #' @return A list with the following components:
 #'         \itemize{
-#'              \item{xw} {The output from jvmulti::whiten(x)}
+#'              \item{xw} {The output from jvcoords::whiten(x)}
 #'              \item{IC} {The matrix of the loading vectors for the whitened data}
 #'              \item{y} {The matrix of the projections of the whitened data along the loading vectors}
 #'              \item{entr} {The m-spacing entropy of each row of y}
@@ -79,13 +79,13 @@
 clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, seed, 
                     kmeans_tol=0.1, kmeans_iter=100,
                     optim_maxit=1000, opt_method="Nelder-Mead",
-                    size_clust, verbose=FALSE) {
+                    size_clust, compute.scores = TRUE, verbose=FALSE) {
     
     # check if we have whitened data
     # here p is how many PCA loadings we use to do ICA on
     # num_loadings is how many ICA loadings we want outputted
     if (missing(xw)) {
-        xw <- jvmulti::whiten(x, compute.scores=TRUE)
+        xw <- jvcoords::whiten(x, compute.scores=TRUE)
     } else {
         # rescale xw so works with p
         if (!missing(p)) {
@@ -105,7 +105,7 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
     if(missing(m)) m <- floor(sqrt(n))
 
     # some error checking
-    if(num_loadings > p) {
+    if(num_loadings > (p-1)) {
         warning("num_loadings = ", num_loadings, " must be less than p = ", p, 
                     ". Set num_loadings = p - 1.")
         num_loadings <- p - 1
@@ -170,7 +170,8 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
         }
         ica_loading <- .ica.clusters(z=z, IC=IC, k=k, m=m,
                                     best_dirs=best_dirs, maxit = optim_maxit,
-                                    opt_method=opt_method, verbose=verbose, size_clust=size_clust)
+                                    opt_method=opt_method, size_clust=size_clust,
+                                    verbose=verbose)
         if(!missing(size_clust) && (size_clust > 1)) {
             ica_loading <- ica_loading$best
         }
@@ -200,7 +201,13 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
     colnames(IC) <- paste0('IC', seq_len(num_loadings))
     rownames(IC) <- rownames(xw$loadings)
 
-    res <- list(xw=xw, IC=IC, y=z %*% IC, entr=entr)
+    res$xw <- xw
+    res$IC <- IC
+    if(compute.scores == TRUE) {
+        y <- z %*% IC
+        res$y <- y
+    }
+    res$entropy <- entr
     class(res) = "clusterICA"
     res
 }
