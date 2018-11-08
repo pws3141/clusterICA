@@ -1,7 +1,7 @@
 Package: clusterICA
 Type: Package
 Title: Approximate Independent Component Anaylsis
-Version: 0.1.1
+Version: 0.12
 Authors@R: c(
   person("Paul", "Smith", email = "mmpws@leeds.ac.uk", role = c("aut", "cre")),
   person("Jochen", "Voss", email = "J.Voss@leeds.ac.uk", role = "aut"))
@@ -16,7 +16,7 @@ Description:
   Householder rotations are used to make each loading orthogonal to all
   previous ones.
 Imports:
-  jvmulti
+  jvcoords
 License: GPL-3
 Encoding: UTF-8
 NeedsCompilation: no

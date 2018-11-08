@@ -4,7 +4,7 @@
 \alias{entropy}
 \title{Entropy estimation using m-spacing}
 \usage{
-entropy(x, m = floor(sqrt(c(length(x), ncol(x)))))
+entropy(x, m)
 }
 \arguments{
 \item{x}{the data, either a vector or matrix.

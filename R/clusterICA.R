@@ -18,6 +18,7 @@
 #' @param opt_method the method used in the optimisation step, see optim
 #' @param size_clust (optional) if size_clust = k > 1, then optimisation is performed on k random directions in each cluster. 
 #'                      If missing, then optimisation is performed on the best direction in each cluster.
+#' @param compute.scores if TRUE then scores of the whitened data are outputted
 #' @param verbose if TRUE then information is given on the status of the function 
 #' @return A list with the following components:
 #'         \itemize{
@@ -201,6 +202,7 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
     colnames(IC) <- paste0('IC', seq_len(num_loadings))
     rownames(IC) <- rownames(xw$loadings)
 
+    res <- list()
     res$xw <- xw
     res$IC <- IC
     if(compute.scores == TRUE) {
