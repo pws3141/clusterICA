@@ -102,21 +102,23 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
 
     n <- nrow(z)
     if(missing(p)) p <- ncol(z)
-    if(missing(num_loadings)) num_loadings <- p - 1
+    if(missing(num_loadings)) num_loadings <- p
     if(missing(m)) m <- floor(sqrt(n))
 
     # some error checking
-    if(num_loadings > (p-1)) {
-        warning("num_loadings = ", num_loadings, " must be less than p = ", p, 
-                    ". Set num_loadings = p - 1.")
-        num_loadings <- p - 1
+    if(num_loadings > (p)) {
+        warning("num_loadings = ", num_loadings, " must be less than p + 1 = ", 
+                (p+1), ". Set num_loadings = p.")
+        num_loadings <- p
     }
 
     # initiate loadings list
     loadings <- vector(mode = "list", length = num_loadings)
     entr <- numeric()
     IC <- diag(p)
-    for(k in 1:num_loadings) {
+    loop_num <- num_loadings
+    if (loop_num == p) loop_num <- p - 1
+    for(k in 1:loop_num) {
         if (verbose == TRUE) {
             cat("optimising direction", k, "out of", num_loadings, "\n")
         }
@@ -197,6 +199,15 @@ clusterICA <- function(x, xw, m, num_loadings, p, rand_iter=5000, rand_out=100, 
         IC[,k:p] <- IC[,k:p,drop=FALSE] %*% P
         entr[k] <- best_entr
     }
+
+    if (num_loadings == p) {
+        best_dir <- 1
+        w.orig.space <- IC %*% c(rep(0, p-1), best_dir)
+        z_proj <- t(z %*% w.orig.space)
+        best_entr <- entropy(z_proj, m = m)
+        entr[p] <- best_entr
+    }
+
     IC <- IC[, seq_len(num_loadings), drop=FALSE]
 
     colnames(IC) <- paste0('IC', seq_len(num_loadings))
