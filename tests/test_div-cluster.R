@@ -1,6 +1,6 @@
 library(clusterICA)
 
-generate.data <- function(n1, n2, d) {
+generateData <- function(n1, n2, d) {
     x1 <- rnorm(n1, d)
     y1 <- rnorm(n1, 0)
     z1 <- rnorm(n1, 0, 0.1)
@@ -12,20 +12,20 @@ generate.data <- function(n1, n2, d) {
     X / sqrt(rowSums(X^2))
 }
 
-test.data <- list(
-    `gen(40,10,6)`=function() generate.data(40, 10, 6),
-    `gen(80,20,6)`=function() generate.data(80, 20, 6),
-    `gen(800,200,6)`=function() generate.data(800, 200, 6)
+testData <- list(
+    `gen(40,10,6)`=function() generateData(40, 10, 6),
+    `gen(80,20,6)`=function() generateData(80, 20, 6),
+    `gen(800,200,6)`=function() generateData(800, 200, 6)
 )
 
 
-test.method <- function(fn) {
+testMethod <- function(fn) {
     cat("\n\n*** testing ", deparse(substitute(fn)), "\n\n", sep="")
     times <- numeric(0)
     clusters <- integer(0)
     RSS <- numeric(0)
-    for (test.idx in 1:length(test.data)) {
-        X <- test.data[[test.idx]]()
+    for (test.idx in 1:length(testData)) {
+        X <- testData[[test.idx]]()
         M <- 100
         t0 <- proc.time()["elapsed"]
         for (i in 1:M) {
@@ -38,20 +38,20 @@ test.method <- function(fn) {
     }
 
     res <- data.frame(`time [ms]`=1000*times, clusters, RSS, check.names=FALSE)
-    row.names(res) <- names(test.data)
+    row.names(res) <- names(testData)
     print(res)
 }
 
-test.method(function(X) cluster.proj.divisive(X, tol=0.1))
+testMethod(function(X) clusterProjDivisive(X, tol=0.1))
 
 #######
 
 par(mfrow = c(2,2))
 for (i in 1:4) {
-	X1 <- generate.data(276, 89, 6)
-	c <- cluster.proj.divisive(X1, tol=0.1)
+	X1 <- generateData(276, 89, 6)
+	c <- clusterProjDivisive(X1, tol=0.1)
 
-	diffc <- c$wss_all[-length(c$wss_all)] - c$wss_all[-1]
-	plot(diffc / c$wss_all[1])
+	diffc <- c$wssAll[-length(c$wssAll)] - c$wssAll[-1]
+	plot(diffc / c$wssAll[1])
 }
 

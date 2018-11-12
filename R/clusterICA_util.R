@@ -2,20 +2,20 @@
 # best directions are those that minimise entropy
 # zeros=TRUE allow some elements of the direction to be zero
 # with a higher change of those associated with lower PC loadings being zero
-.rand.dirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
+randDirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
     p <- ncol(z)
     n <- nrow(z)
     r <- p - k + 1 # the dimension of the search space
 
     if (!missing(seed)) set.seed(seed)
-    trials_mat <- matrix(rnorm(r*iter), iter, r)
+    trialsMat <- matrix(rnorm(r*iter), iter, r)
     # lets try with some elements zero
     # seemed to work well when tried a while back
     if(zeros == TRUE) {
         # probs means that the smaller PC loadings are more
         # likely to be ignored.
         probs <- seq(from=1/r, to=1, length=r)
-        trials_mat <- t(apply(trials_mat, 1, function(trials) {
+        trialsMat <- t(apply(trialsMat, 1, function(trials) {
             # always want at least two non-zero elements
             # otherwise would just get the PC loading back
             sampp <- sample(1:r, size=sample(1:(r-2), 1), 
@@ -24,27 +24,27 @@
             trials
             }))
     }
-    trials_mat <- trials_mat / sqrt(rowSums(trials_mat^2))
-    trials.orig.space <- trials_mat %*% t(IC[,k:p])
+    trialsMat <- trialsMat / sqrt(rowSums(trialsMat^2))
+    trialsOrigSpace <- trialsMat %*% t(IC[,k:p])
     # switch to columns for each trial so that entr works
-    trials.proj <- trials.orig.space %*% t(z)
-    entr <- entropy(trials.proj, m=m)
+    trialsProj <- trialsOrigSpace %*% t(z)
+    entr <- entropy(trialsProj, m=m)
 
-    dir.table <- cbind(entr, trials_mat)
+    dirTable <- cbind(entr, trialsMat)
     # arange in order
-    dir.table <- dir.table[order(dir.table[,1]),]
+    dirTable <- dirTable[order(dirTable[,1]),]
     namesW <- paste0('dir', seq_len(iter))
     if(!missing(out)) {
         if(out > iter) {
             warning("out > iter: have set out = iter")
             out <- iter
         }
-        dir.table <- dir.table[1:(out),]
+        dirTable <- dirTable[1:(out),]
         namesW <- paste0('dir', seq_len(out))
     }
     
-    entr <- dir.table[,1]
-    dirs <- dir.table[,-1]
+    entr <- dirTable[,1]
+    dirs <- dirTable[,-1]
 
     rownames(dirs) <- namesW
     colnames(dirs) <- NULL
@@ -57,152 +57,151 @@
 
 
 # put random directions into clusters
-# uses divisive kmeans clustering from cluster.proj.divisive
-.cluster.norm <- function(z, IC, k, m, dirs, kmeans_tol=0.1,
-                         kmeans_iter=100, save.all=FALSE, clust_avg=FALSE) {
+# uses divisive kmeans clustering from clusterProjDivisive
+clusterNorm <- function(z, IC, k, m, dirs, kmeanTol=0.1,
+                         kmeanIter=100, saveAll=FALSE, clustAvg=FALSE) {
     # convert dirs to listrbose=
     p <- ncol(z)
     n <- nrow(z)
 
     entr <- dirs$entr
     dirs <- dirs$dirs
-    dirs.list <- lapply(seq_len(nrow(dirs)), function(i) dirs[i,])
 
     # K-Means Cluster Analysis: Divisive
-    c <- cluster.proj.divisive(X=dirs, tol=kmeans_tol, iter.max=kmeans_iter)
+    c <- clusterProjDivisive(X=dirs, tol=kmeanTol, iterMax=kmeanIter)
     clusters <- max(c$c)
     
     # append cluster assignment & put into list
-    out_tmp <- vector(mode = "list", length = clusters)
-    dirs.cluster_append <- cbind(c$c, entr, dirs)
+    outTmp <- vector(mode = "list", length = clusters)
+    dirsClusterAppend <- cbind(c$c, entr, dirs)
     for(i in 1:clusters) {
-        which.cluster <- which(dirs.cluster_append[,1] == i)
-        if (save.all == FALSE & clust_avg==FALSE) {
-            out_tmp[[i]]$entr <- dirs.cluster_append[which.cluster, 2]
-            entr_min <- which.min(out_tmp[[i]]$entr)
-            out_tmp[[i]]$entr <- out_tmp[[i]]$entr[entr_min]
-            out_tmp[[i]]$dirs <- dirs.cluster_append[which.cluster, c(-1, -2), 
+        whichCluster <- which(dirsClusterAppend[,1] == i)
+        if (saveAll == FALSE & clustAvg==FALSE) {
+            outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]
+            entrMin <- which.min(outTmp[[i]]$entr)
+            outTmp[[i]]$entr <- outTmp[[i]]$entr[entrMin]
+            outTmp[[i]]$dirs <- dirsClusterAppend[whichCluster, c(-1, -2), 
                                                         drop=FALSE]
-            out_tmp[[i]]$dirs <- out_tmp[[i]]$dirs[entr_min,]
+            outTmp[[i]]$dirs <- outTmp[[i]]$dirs[entrMin,]
         } else {
-            out_tmp[[i]]$entr <- dirs.cluster_append[which.cluster, 2]
-            out_tmp[[i]]$dirs <- dirs.cluster_append[which.cluster, c(-1, -2)]
-            #TODO: Remove clust_avg?
-            if (clust_avg == TRUE) {
-                s <- La.svd(out_tmp[[i]]$dirs, nu=0, nv=1)
+            outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]
+            outTmp[[i]]$dirs <- dirsClusterAppend[whichCluster, c(-1, -2)]
+            #TODO: Remove clustAvg?
+            if (clustAvg == TRUE) {
+                s <- La.svd(outTmp[[i]]$dirs, nu=0, nv=1)
                 centre <- s$vt[1,]
-                out_tmp[[i]]$dirs <- centre
+                outTmp[[i]]$dirs <- centre
                 # calc entropy of centre
-                centre.orig.space <- centre %*% t(IC[,k:p])
-                centre.proj <- centre.orig.space %*% t(z)
-                entr <- entropy(centre.proj, m=m)
-                out_tmp[[i]]$entr <- entr
+                centreOrigSpace <- centre %*% t(IC[,k:p])
+                centreProj <- centreOrigSpace %*% t(z)
+                entr <- entropy(centreProj, m=m)
+                outTmp[[i]]$entr <- entr
             }
         }
     }
-    out_tmp
-    return(out_tmp)
+    outTmp
+    return(outTmp)
 }
 
 # optimise each direction
 # here dir is a single direction (vector)
 # cluster arg only used for cat() in clusterICA
-.dir.optim <- function(z, IC, k, m, dirs, maxit=1000, 
-                        cluster, opt_method="Nelder-Mead") {
+dirOptim <- function(z, IC, k, m, dirs, maxit=1000, 
+                        cluster, optimMethod="Nelder-Mead") {
     n <- ncol(z)
 
     opt <- optim(par = dirs,
                  function(w) {
                      w <- w / sqrt(sum(w^2))
-                     w.orig.space <- IC %*% c(rep(0, k-1), w)
-                     z_proj <- t(z %*% w.orig.space)
-                     entropy(z_proj, m = m)
-                 }, method = opt_method, control = list(maxit = maxit))
+                     wOrigSpace <- IC %*% c(rep(0, k-1), w)
+                     zProj <- t(z %*% wOrigSpace)
+                     entropy(zProj, m = m)
+                 }, method = optimMethod, control = list(maxit = maxit))
     
     if (opt$convergence == 1) {
-        warning("In cluster ", cluster, " optimisation did not converge, consider increasing maxit")
+        warning("In loading", k, ", cluster ", cluster, " optimisation did not converge, consider increasing maxit \n")
     } else if (opt$convergence != 0) {
-        warning("In cluster ", cluster, " optimisation did not converge (error ", opt$convergence, ")")
+        warning("In loading", k, ", cluster ", cluster, " optimisation did not converge (error ", opt$convergence, ") \n")
     }
     
-    entr_tmp <- opt$value
-    dir_tmp <- opt$par
-    dir_tmp <- dir_tmp / sqrt(sum(dir_tmp^2))
+    entrTmp <- opt$value
+    dirTmp <- opt$par
+    dirTmp <- dirTmp / sqrt(sum(dirTmp^2))
     
     output <- list()
-    output$entr <- entr_tmp
-    output$dirs <- dir_tmp
+    output$entr <- entrTmp
+    output$dirs <- dirTmp
     output
 }
 
 # create a single ICA loading from clustered random projections
-# input is from .cluster.norm
-.ica.clusters <- function(z, IC, k, m, best_dirs, maxit=1000,
-                         opt_method="Nelder-Mead", size_clust,
-                         clust_avg=FALSE, verbose=FALSE) {
+# input is from clusterNorm
+icaClusters <- function(z, IC, k, m, bestDirs, maxit=1000,
+                         optimMethod="Nelder-Mead", sizeClust,
+                         clustAvg=FALSE, verbose=FALSE) {
     n <- nrow(z)
     p <- ncol(z)
 
-    clusters <- length(best_dirs)
+    clusters <- length(bestDirs)
     if (verbose == TRUE) {
         cat("////Optimising direction of projection on ", 
                 clusters, " clusters \n")
     }
 
-    dir_opt <- matrix(nrow = clusters, ncol = (p  - k + 1 + 1))
-    dir_opt_many <- vector(mode="list", length=clusters)
+    dirOpt <- matrix(nrow = clusters, ncol = (p  - k + 1 + 1))
+    dirOptMany <- vector(mode="list", length=clusters)
     nn <- numeric()
     for(i in 1:clusters) {
         if (verbose == TRUE) {
             cat("//// Optimising cluster ", i, "\n")
         }
-        dir_tmp <- best_dirs[[i]]
-        n_tmp <- length(dir_tmp$entr)
-        nn[i] <- n_tmp
-        if(n_tmp == 1) {
-            dir_opt_tmp <- .dir.optim(z = z, IC = IC, dirs = dir_tmp$dirs,
+        dirTmp <- bestDirs[[i]]
+        nTmp <- length(dirTmp$entr)
+        nn[i] <- nTmp
+        if(nTmp == 1) {
+            dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirTmp$dirs,
                                      k = k, m = m, maxit = maxit,
-                                     cluster=i, opt_method=opt_method)
+                                     cluster=i, optimMethod=optimMethod)
 
         } else {
-            # randomly choose size_clust dirs to optimise in each cluser
-            if(is.numeric(size_clust)) {
-                samp <- sample(n_tmp, size = min(size_clust, n_tmp))
+            # randomly choose sizeClust dirs to optimise in each cluser
+            if(is.numeric(sizeClust)) {
+                samp <- sample(nTmp, size = min(sizeClust, nTmp))
             } else {
-                samp <- seq_len(n_tmp)
+                samp <- seq_len(nTmp)
             }
-            dir_opt_clust <- lapply(samp, function(j) {
-                dirr <- dir_tmp$dirs[j,]
-                dir_opt_tmp <- .dir.optim(z = z, IC = IC, dirs = dirr,
+            dirOpt_clust <- lapply(samp, function(j) {
+                dirr <- dirTmp$dirs[j,]
+                dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirr,
                                          k = k, m = m, maxit = maxit, cluster=i,
-                                         opt_method=opt_method)
+                                         optimMethod=optimMethod)
             })
-            dir_entr_tmp <- sapply(dir_opt_clust, function(x) x$entr)
-            dir_dir_tmp <- t(sapply(dir_opt_clust, function(x) x$dir))
-            names_tmp <- names(dir_tmp$entr)
-            dir_table <- cbind(dir_entr_tmp, dir_dir_tmp)
-            ord_tmp <- order(dir_table[,1])
-            dir_table <- dir_table[ord_tmp,]
+            dirEntrTmp <- sapply(dirOpt_clust, function(x) x$entr)
+            dirDirTmp <- t(sapply(dirOpt_clust, function(x) x$dir))
+            names_tmp <- names(dirTmp$entr)
+            dirTable <- cbind(dirEntrTmp, dirDirTmp)
+            ord_tmp <- order(dirTable[,1])
+            dirTable <- dirTable[ord_tmp,]
             names_tmp <- names_tmp[ord_tmp]
-            dir_entr_tmp <- dir_table[,1]
-            names(dir_entr_tmp) <- names_tmp
-            dir_dir_tmp <- dir_table[,-1]
-            min_entr <- which.min(dir_entr_tmp)
+            dirEntrTmp <- dirTable[,1]
+            names(dirEntrTmp) <- names_tmp
+            dirDirTmp <- dirTable[,-1]
+            entrMin <- which.min(dirEntrTmp)
 
-            dir_opt_tmp <- list(entr=dir_entr_tmp[min_entr], 
-                                    dirs=dir_dir_tmp[min_entr,])
-            dir_opt_many[[i]] <- list(entr=dir_entr_tmp, dirs=dir_dir_tmp)
+            dirOptTmp <- list(entr=dirEntrTmp[entrMin], 
+                                    dirs=dirDirTmp[entrMin,])
+            dirOptMany[[i]] <- list(entr=dirEntrTmp, dirs=dirDirTmp)
         }
 
-        dir_opt[i,] <- c(dir_opt_tmp$entr, dir_opt_tmp$dirs)
+        dirOpt[i,] <- c(dirOptTmp$entr, dirOptTmp$dirs)
     }
-    cluster_num <- which.min(dir_opt[,1])
+    clusterNum <- which.min(dirOpt[,1])
     output <- list()
-    output$cluster_num <- cluster_num
-    output$dir_entr <- dir_opt[cluster_num, 1]
-    output$dir_optim <- dir_opt[cluster_num, -1]
+    output$clusterNum <- clusterNum
+    output$dir_entr <- dirOpt[clusterNum, 1]
+    output$dirOptim <- dirOpt[clusterNum, -1]
     if (any(nn > 1)) {
-        return(list(best=output, all=dir_opt_many))
+        return(list(best=output, all=dirOptMany))
     } else {
         return(output)
     }

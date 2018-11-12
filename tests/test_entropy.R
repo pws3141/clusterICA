@@ -1,6 +1,6 @@
 library(clusterICA)
 
-generate.data <- function(n1, n2, d) {
+generateData <- function(n1, n2, d) {
     x1 <- rnorm(n1, d)
     y1 <- rnorm(n1, 0)
     z1 <- rnorm(n1, 0, 0.1)
@@ -12,19 +12,19 @@ generate.data <- function(n1, n2, d) {
     X / sqrt(rowSums(X^2))
 }
 
-test.data <- list(
-    `gen(40,10,6)`=function() t(generate.data(40, 10, 6)),
-    `gen(80,20,6)`=function() t(generate.data(80, 20, 6)),
-    `gen(800,200,6)`=function() t(generate.data(800, 200, 6))
+testData <- list(
+    `gen(40,10,6)`=function() t(generateData(40, 10, 6)),
+    `gen(80,20,6)`=function() t(generateData(80, 20, 6)),
+    `gen(800,200,6)`=function() t(generateData(800, 200, 6))
 )
 
-test.method <- function(fn) {
+testMethod <- function(fn) {
     cat("\n\n*** testing ", deparse(substitute(fn)), "\n\n", sep="")
     times <- numeric(0)
     clusters <- integer(0)
     RSS <- numeric(0)
-    for (test.idx in 1:length(test.data)) {
-        X <- test.data[[test.idx]]()
+    for (test.idx in 1:length(testData)) {
+        X <- testData[[test.idx]]()
         M <- 100
         t0 <- proc.time()["elapsed"]
         for (i in 1:M) {
@@ -37,11 +37,11 @@ test.method <- function(fn) {
     }
 
     res <- data.frame(`time [ms]`=1000*times, clusters, RSS, check.names=FALSE)
-    row.names(res) <- names(test.data)
+    row.names(res) <- names(testData)
     print(res)
 }
 
-test.method(function(X) entropy(X))
+testMethod(function(X) entropy(X))
 
 
 # check for any numerical errors
@@ -60,10 +60,10 @@ X6 <- matrix(rnorm(15000), ncol=1000, nrow=15)
 X <- list(X1, X2, X3, X4, X5, X6)
 for (i in 1:length(X)) {
     Xi <- X[[i]] 
-    Xi.entr_mat <- entropy(Xi)
+    XiEntrMat <- entropy(Xi)
     for (j in 1:nrow(Xi)) {
-        Xi.entrr <- entropy(Xi[j,])
-        stopifnot(Xi.entrr == Xi.entr_mat[j])
+        XiEntrr <- entropy(Xi[j,])
+        stopifnot(XiEntrr == XiEntrMat[j])
     }
 }
 

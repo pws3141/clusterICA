@@ -27,13 +27,13 @@ X2 <- matrix(rnorm(150), ncol=10, nrow=15)
 X3 <- matrix(rnorm(1500), ncol=10, nrow=150)
 X4 <- matrix(rnorm(1500), ncol=100, nrow=15)
 X <- list(X1, X2, X3, X4)
-Xi.entr <- vector("list", length = length(X))
+XiEntr <- vector("list", length = length(X))
 for (i in 1:length(X)) {
     Xi <- X[[i]] 
-    Xi.entr_mat <- entropy(Xi)
-    Xi.entr[[i]] <- Xi.entr_mat
+    XiEntr_mat <- entropy(Xi)
+    XiEntr[[i]] <- XiEntr_mat
 }
-str(Xi.entr)
+str(XiEntr)
 
 }
 \references{

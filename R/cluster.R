@@ -4,27 +4,27 @@
 # Choose one new data point at random as a new center, using a weighted probability distribution where a point x is chosen with probability proportional to D(x)2.
 # Repeat Steps 2 and 3 until k centers have been chosen.
 # Now that the initial centers have been chosen, proceed using standard k-means clustering.
-.cluster.proj.plusplus <- function(X, K) {
+clusterProjPlusPlus <- function(X, K) {
     n <- nrow(X)
     p <- ncol(X)
 
     DX <- rep(1/n, n)
     dist <- matrix(0, nrow=n, ncol=K)
     for (k in 1:K) {
-        sample_tmp <- sample(n, size=1, prob=DX)
-        point_tmp <- X[sample_tmp, ]
-        dist[, k] <- 1 - (X %*% point_tmp)^2
+        sampleTmp <- sample(n, size=1, prob=DX)
+        pointTmp <- X[sampleTmp, ]
+        dist[, k] <- 1 - (X %*% pointTmp)^2
         # overwrite to stop numerical errors so that DX is always positive
-        dist[sample_tmp, k] <- 0
+        dist[sampleTmp, k] <- 0
         DX <- apply(dist[,1:k,drop=FALSE], 1, min)
     }
     apply(dist, 1, which.min)
 }
 
-.cluster.proj.kmeans <- function(X, K, iter.max=100, initial, verbose=TRUE) {
+.clusterProjKmeans <- function(X, K, iterMax=100, initial, verbose=TRUE) {
     n <- nrow(X)
     if(missing(initial)) {
-        c <- .cluster.proj.plusplus(X, K)
+        c <- clusterProjPlusPlus(X, K)
         } else {
             # set cluster s.t. they start at 1
             if(!min(initial) == 1) initial <- initial - min(initial) + 1
@@ -32,14 +32,14 @@
                 warning("'initial' must be of length n = ", 
                             n, ". Initialising using kmeans++ instead.")
                 if(missing(K)) K <- max(initial)
-                initial <- .cluster.proj.plusplus(X, K)    
+                initial <- clusterProjPlusPlus(X, K)    
             } # end if
             c <- initial
             K <- max(c)
         } # end else
     
     j <- 0
-    for (i in 1:iter.max) {
+    for (i in 1:iterMax) {
         j <- j + 1
         dist <- matrix(0, nrow=n, ncol=K)
         for (k in 1:K) {
@@ -53,16 +53,16 @@
             }
 
         }
-        c.old <- c
+        cOld <- c
         c <- apply(dist, 1, which.min)
 
-        if (all(c.old == c)) {
+        if (all(cOld == c)) {
             break
         }
     }
     if(verbose == TRUE) {
-        if(j < iter.max) cat("Converged to ", K, " clusters in ", j, " iterations \n")
-        if(j == iter.max) cat("Maximum iterations of ", iter.max, " used, consider increasing iter.max \n")
+        if(j < iterMax) cat("Converged to ", K, " clusters in ", j, " iterations \n")
+        if(j == iterMax) cat("Maximum iterations of ", iterMax, " used, consider increasing iterMax \n")
     }
     c
 }
@@ -75,7 +75,7 @@
 #'
 #' @param X the data belonging to the projective space
 #' @param K the number of clusters required in output
-#' @param iter.max the maximum number of iterations
+#' @param iterMax the maximum number of iterations
 #' @param initial (optional) the initial clustering. 
 #'                  The argument 'initial' is required to be a vector of 
 #'                      the same length as number of rows in X.
@@ -91,7 +91,7 @@
 #'
 #'
 #' @author Jochen Voss, \email{Jochen.Voss@@leeds.ac.uk}
-#' @seealso cluster.proj.divisive
+#' @seealso clusterProjDivisive
 #' @keywords clustering kmeans
 #'
 #' @examples
@@ -100,18 +100,18 @@
 #' x2 <- rnorm(n2, 8); y2 <- rnorm(n2, 8); z2 <- rnorm(n2, 0, 0.1)
 #' X <- rbind(cbind(x1, y1, z1), cbind(x2, y2, z2)) * sample(c(-1, 1), size=n1+n2, replace=TRUE)
 #' X <- X / sqrt(rowSums(X^2))
-#' (c <- cluster.proj.kmeans(X, 2))
+#' (c <- clusterProjKmeans(X, 2))
 #'
 #' @export
-cluster.proj.kmeans <- function(X, K, iter.max=100, initial) {
-    c <- .cluster.proj.kmeans(X=X, K=K, iter.max=iter.max, 
+clusterProjKmeans <- function(X, K, iterMax=100, initial) {
+    c <- .clusterProjKmeans(X=X, K=K, iterMax=iterMax, 
                                 initial=initial, verbose=FALSE)
     c
 }
 
 # find total sum of squares and
 # within cluster sum-of-squares
-.cluster.proj.wss <- function(X, c) {
+clusterProjWss <- function(X, c) {
     K <- max(c)
     p <- ncol(X)
     n <- nrow(X)
@@ -124,31 +124,31 @@ cluster.proj.kmeans <- function(X, K, iter.max=100, initial) {
     # split X into clusters
     ticker <- rep(0, K)
     for(i in 1:n) {
-        c_tmp <- c[i]
-        ticker[c_tmp] <- ticker[c_tmp] + 1
-        clust[[c_tmp]][ticker[c_tmp],] <- X[i,]
+        cTmp <- c[i]
+        ticker[cTmp] <- ticker[cTmp] + 1
+        clust[[cTmp]][ticker[cTmp],] <- X[i,]
     }
     if (K == 1) {
 
     }
-    wss_clust <- unlist(sapply(clust, function(x) {
-        n_tmp <- nrow(x)
+    wssClust <- unlist(sapply(clust, function(x) {
+        nTmp <- nrow(x)
         # TODO: make this if statement redundant. Don't want empty clusters
-        if(n_tmp == 0) {
+        if(nTmp == 0) {
             SEE <- 0
         } else {
             s <- La.svd(x, nu=0, nv=1)
-            SSE <- n_tmp - s$d[1]^2
-            # stop numerical error if s$d[1]^2 v. close to n_tmp
+            SSE <- nTmp - s$d[1]^2
+            # stop numerical error if s$d[1]^2 v. close to nTmp
             #if(SSE < 0) {SSE <- 0}
         }
         }))
-    if(any(wss_clust < 0)) {
-        which_wss <- which(wss_clust < 0)
-        wss_clust[which_wss] <- 0
+    if(any(wssClust < 0)) {
+        whichWss <- which(wssClust < 0)
+        wssClust[whichWss] <- 0
     }
-    wss <- sum(wss_clust)
-    return(list(wss=wss, rss=wss_clust))
+    wss <- sum(wssClust)
+    return(list(wss=wss, rss=wssClust))
 }
 
 # clustering method using hierarchical divisive clustering
@@ -162,7 +162,7 @@ cluster.proj.kmeans <- function(X, K, iter.max=100, initial) {
 #' @param tol the tolerance that when reached, stops increasing the number of clusters. 
 #'                  At each step, the (change in wss) / (original wss) must be above this tolerance.
 #'                  In general, as the tolerance decreases, the number of clusters in the output increases.
-#' @param iter.max the maximum number of iterations
+#' @param iterMax the maximum number of iterations
 #'
 #' @return A list with the following components:
 #' \itemize{
@@ -170,11 +170,11 @@ cluster.proj.kmeans <- function(X, K, iter.max=100, initial) {
 #'                      that the corresponding X value belongs to.}
 #'          \item{rss} {Vector of the within sum-of-squares for each cluster}
 #'          \item{wss} {The total within sum-of-squares for the outputted cluster}
-#'          \item{wss_all} {The change in total within sum-of-squares for each 
+#'          \item{wssAll} {The change in total within sum-of-squares for each 
 #'                              iteration of the function}
 #' }
 #' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
-#' @seealso cluster.proj.kmeans
+#' @seealso clusterProjKmeans
 #' @keywords clustering, kmeans
 #'
 #' 
@@ -184,53 +184,53 @@ cluster.proj.kmeans <- function(X, K, iter.max=100, initial) {
 #' x2 <- rnorm(n2, 8); y2 <- rnorm(n2, 8); z2 <- rnorm(n2, 0, 0.1)
 #' X <- rbind(cbind(x1, y1, z1), cbind(x2, y2, z2)) * sample(c(-1, 1), size=n1+n2, replace=TRUE)
 #' X <- X / sqrt(rowSums(X^2))
-#' (c <- cluster.proj.divisive(X=X, tol=0.1))
+#' (c <- clusterProjDivisive(X=X, tol=0.1))
 #'
 #' @export
-cluster.proj.divisive <- function(X, tol, iter.max=100) {
+clusterProjDivisive <- function(X, tol, iterMax=100) {
     stopifnot(tol > 0 && tol <= 1)
 
     p <- ncol(X)
     n <- nrow(X)
 
 	i <- 1
-	c_curr <- rep(1, n)
-	rss_all <- .cluster.proj.wss(X=X, c=c_curr)	
-	wss <- rss_all$wss
+	cCurr <- rep(1, n)
+	rssAll <- clusterProjWss(X=X, c=cCurr)	
+	wss <- rssAll$wss
 	if(wss < 10e-16) {
-        return(list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=NA))
+        return(list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=NA))
     }
     if (missing(tol)) tol <- 0.1
 
-	rss_max <- which.max(rss_all$rss)
-	wss_all <- wss
+	rssMax <- which.max(rssAll$rss)
+	wssAll <- wss
     diffc <- 1
     diffct <- 0
-	while(diffc > tol & i < iter.max) {
+	while(diffc > tol & i < iterMax) {
 		i <- i + 1
 		# select cluster with largest rss 
 		# nb drop=F not needed as clust with only 1 element will not be picked
-		clust_max <- X[c_curr == rss_max, , drop=FALSE]
+		clustMax <- X[cCurr == rssMax, , drop=FALSE]
 
 		# split this cluster into two using kmeans
-		c_tmp <- cluster.proj.kmeans(X=clust_max, K=2)
+		cTmp <- clusterProjKmeans(X=clustMax, K=2)
 
-		# rearrange c_curr so that we can add c=1 and c=2 for new clust
-		which_curr <- which(c_curr==rss_max)
-		if(rss_max > 1) c_curr[c_curr < rss_max] <- c_curr[c_curr < rss_max] + 1
-		c_curr[-which_curr] <- c_curr[-which_curr] + 1
+		# rearrange cCurr so that we can add c=1 and c=2 for new clust
+		whichCurr <- which(cCurr==rssMax)
+		if(rssMax > 1) cCurr[cCurr < rssMax] <- cCurr[cCurr < rssMax] + 1
+		cCurr[-whichCurr] <- cCurr[-whichCurr] + 1
 		# add new clust to beginning
-		c_curr[which_curr] <- c_tmp
+		cCurr[whichCurr] <- cTmp
 		
 		# find which cluster has largest RSS
 		# this is at end of loop so that wss > tol_wss is correct
-		rss_all <- .cluster.proj.wss(X=X, c=c_curr)
-		rss_max <- which.max(rss_all$rss)
-		wss <- rss_all$wss
-		wss_all[i] <- wss
-        diffc <- (wss_all[i-1] - wss_all[i]) / wss_all[1]
+		rssAll <- clusterProjWss(X=X, c=cCurr)
+		rssMax <- which.max(rssAll$rss)
+		wss <- rssAll$wss
+		wssAll[i] <- wss
+        diffc <- (wssAll[i-1] - wssAll[i]) / wssAll[1]
 	}
-	if (i == iter.max) warning("Max iterations reached: increase iter.max or tol")
+	if (i == iterMax) warning("Max iterations reached: increase iterMax or tol")
 
-	list(c=c_curr, rss=rss_all$rss, wss=wss, wss_all=wss_all)
+	list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=wssAll)
 }
