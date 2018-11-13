@@ -4,14 +4,14 @@
 \alias{clusterProjKmeans}
 \title{K-means clustering on the projective space}
 \usage{
-clusterProjKmeans(X, K, iterMax = 100, initial)
+clusterProjKmeans(X, K, iter.max = 100, initial)
 }
 \arguments{
 \item{X}{the data belonging to the projective space}
 
 \item{K}{the number of clusters required in output}
 
-\item{iterMax}{the maximum number of iterations}
+\item{iter.max}{the maximum number of iterations}
 
 \item{initial}{(optional) the initial clustering. 
 The argument 'initial' is required to be a vector of 
