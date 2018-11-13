@@ -47,7 +47,7 @@ testMethod(function(X) entropy(X))
 # check for any numerical errors
 set.seed(1234)
 X <- matrix(rep(-4:5,by=1,each=100) + rnorm(1000, sd=10e-12), ncol=100, byrow=TRUE)
-entropy(X)
+stopifnot(!any(is.nan(entropy(X))))
 
 # check that matrix = rbind() gives same as indivdual inputs
 X1 <- matrix(rnorm(150), ncol=15, nrow=10)

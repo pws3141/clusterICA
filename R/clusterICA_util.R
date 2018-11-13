@@ -1,8 +1,8 @@
 # produce random directions, and choose the 'out' best directions
 # best directions are those that minimise entropy
-# zeros=TRUE allow some elements of the direction to be zero
-# with a higher change of those associated with lower PC loadings being zero
-randDirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
+# The value associated with the less ``important'' whitening loadings
+# have more probability of being zero
+randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
     p <- ncol(z)
     n <- nrow(z)
     r <- p - k + 1 # the dimension of the search space
@@ -11,19 +11,17 @@ randDirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
     trialsMat <- matrix(rnorm(r*iter), iter, r)
     # lets try with some elements zero
     # seemed to work well when tried a while back
-    if(zeros == TRUE) {
-        # probs means that the smaller PC loadings are more
-        # likely to be ignored.
-        probs <- seq(from=1/r, to=1, length=r)
-        trialsMat <- t(apply(trialsMat, 1, function(trials) {
-            # always want at least two non-zero elements
-            # otherwise would just get the PC loading back
-            sampp <- sample(1:r, size=sample(1:(r-2), 1), 
-                                replace=FALSE, prob=probs)
-            trials[sampp] <- 0
-            trials
-            }))
-    }
+    # probs means that the smaller PC loadings are more
+    # likely to be ignored.
+    probs <- seq(from=1/r, to=1, length=r)
+    trialsMat <- t(apply(trialsMat, 1, function(trials) {
+        # always want at least two non-zero elements
+        # otherwise would just get the PC loading back
+        sampp <- sample(1:r, size=sample(1:(r-2), 1), 
+                            replace=FALSE, prob=probs)
+        trials[sampp] <- 0
+        trials
+        }))
     trialsMat <- trialsMat / sqrt(rowSums(trialsMat^2))
     trialsOrigSpace <- trialsMat %*% t(IC[,k:p])
     # switch to columns for each trial so that entr works
@@ -60,7 +58,6 @@ randDirs <- function(z, IC, k, m, iter=5000, out, seed, zeros=TRUE) {
 # uses divisive kmeans clustering from clusterProjDivisive
 clusterNorm <- function(z, IC, k, m, dirs, kmeanTol=0.1,
                          kmeanIter=100, saveAll=FALSE, clustAvg=FALSE) {
-    # convert dirs to listrbose=
     p <- ncol(z)
     n <- nrow(z)
 
