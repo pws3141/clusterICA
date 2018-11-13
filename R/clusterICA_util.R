@@ -4,7 +4,6 @@
 # have more probability of being zero
 randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
     p <- ncol(z)
-    n <- nrow(z)
     r <- p - k + 1 # the dimension of the search space
 
     if (!missing(seed)) set.seed(seed)
@@ -59,7 +58,6 @@ randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
 clusterNorm <- function(z, IC, k, m, dirs, kmeanTol=0.1,
                         kmeanIter=100, saveAll=FALSE, clustAvg=FALSE) {
     p <- ncol(z)
-    n <- nrow(z)
 
     entr <- dirs$entr
     dirs <- dirs$dirs
@@ -105,8 +103,6 @@ clusterNorm <- function(z, IC, k, m, dirs, kmeanTol=0.1,
 # cluster arg only used for cat() in clusterICA
 dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
                      cluster, optimMethod="Nelder-Mead") {
-    n <- ncol(z)
-
     opt <- optim(par = dirs,
                  function(w) {
                      w <- w / sqrt(sum(w^2))
@@ -136,7 +132,6 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
 icaClusters <- function(z, IC, k, m, bestDirs, maxit=1000,
                         optimMethod="Nelder-Mead", sizeClust,
                         clustAvg=FALSE, verbose=FALSE) {
-    n <- nrow(z)
     p <- ncol(z)
 
     clusters <- length(bestDirs)

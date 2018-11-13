@@ -54,4 +54,3 @@ for (i in 1:4) {
     diffc <- c$wssAll[-length(c$wssAll)] - c$wssAll[-1]
     plot(diffc / c$wssAll[1])
 }
-

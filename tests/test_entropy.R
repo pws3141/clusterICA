@@ -149,9 +149,3 @@ for (i in 1:3) {
     }
     plot(x = 2:(length(Xxx) - 3), y = Xm, type = "b")
 }
-
-
-
-
-
-

@@ -112,8 +112,6 @@ clusterICA <- function(x, xw, m, nComp, p, randIter=5000, randOut=100, seed,
         nComp <- p
     }
 
-    # initiate loadings list
-    loadings <- vector(mode = "list", length = nComp)
     entr <- numeric()
     IC <- diag(p)
     loopNum <- nComp

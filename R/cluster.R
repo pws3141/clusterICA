@@ -6,7 +6,6 @@
 # Now that the initial centers have been chosen, proceed using standard k-means clustering.
 clusterProjPlusPlus <- function(X, K) {
     n <- nrow(X)
-    p <- ncol(X)
 
     DX <- rep(1/n, n)
     dist <- matrix(0, nrow=n, ncol=K)
@@ -190,7 +189,6 @@ clusterProjWss <- function(X, c) {
 clusterProjDivisive <- function(X, tol, iterMax=100) {
     stopifnot(tol > 0 && tol <= 1)
 
-    p <- ncol(X)
     n <- nrow(X)
 
     i <- 1
@@ -205,7 +203,6 @@ clusterProjDivisive <- function(X, tol, iterMax=100) {
     rssMax <- which.max(rssAll$rss)
     wssAll <- wss
     diffc <- 1
-    diffct <- 0
     while(diffc > tol & i < iterMax) {
         i <- i + 1
         # select cluster with largest rss
