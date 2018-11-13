@@ -4,9 +4,9 @@
 \alias{clusterICA}
 \title{Independent Component Analysis (ICA)}
 \usage{
-clusterICA(x, xw, m, nComp, p, randIter = 5000, randOut = 100, seed,
-  kmeanTol = 0.1, kmeanIter = 100, optimMaxit = 1000,
-  optimMethod = "Nelder-Mead", sizeClust, computeScores = TRUE,
+clusterICA(x, xw, m, n.comp, p, rand.iter = 5000, rand.out = 100, seed,
+  kmean.tol = 0.1, kmean.iter = 100, opt.maxit = 1000,
+  opt.method = "Nelder-Mead", size.clust, compute.scores = TRUE,
   verbose = FALSE)
 }
 \arguments{
@@ -16,28 +16,28 @@ clusterICA(x, xw, m, nComp, p, randIter = 5000, randOut = 100, seed,
 
 \item{m}{(optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)}
 
-\item{nComp}{the number of ICA loadings outputted}
+\item{n.comp}{the number of ICA loadings outputted}
 
 \item{p}{(optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step}
 
-\item{randIter}{the number of random directions to initialise}
+\item{rand.iter}{the number of random directions to initialise}
 
-\item{randOut}{the number of the best random directions to keep}
+\item{rand.out}{the number of the best random directions to keep}
 
 \item{seed}{(optional) the set.seed number used for initialising the random directions}
 
-\item{kmeanTol}{the tolerance used in divisive clustering, see clusterProjDivisive}
+\item{kmean.tol}{the tolerance used in divisive clustering, see clusterProjDivisive}
 
-\item{kmeanIter}{the maximum number of iterations used in divisive clustering, see clusterProjDivisive}
+\item{kmean.iter}{the maximum number of iterations used in divisive clustering, see clusterProjDivisive}
 
-\item{optimMaxit}{the maximum number of iterations used in the optimisation step, see optim}
+\item{opt.maxit}{the maximum number of iterations used in the optimisation step, see optim}
 
-\item{optimMethod}{the method used in the optimisation step, see optim}
+\item{opt.method}{the method used in the optimisation step, see optim}
 
-\item{sizeClust}{(optional) if sizeClust = k > 1, then optimisation is performed on k random directions in each cluster. 
+\item{size.clust}{(optional) if size.clust = k > 1, then optimisation is performed on k random directions in each cluster. 
 If missing, then optimisation is performed on the best direction in each cluster.}
 
-\item{computeScores}{if TRUE then scores of the whitened data are outputted}
+\item{compute.scores}{if TRUE then scores of the whitened data are outputted}
 
 \item{verbose}{if TRUE then information is given on the status of the function}
 }
@@ -72,7 +72,7 @@ x2[,2] <- scale(x2[,2])
 good2 <- cos(20 * x2 \%*\% a1) >= 0
 x2Good <- x2[which(good2),]
 xGood <- rbind(x1Good, x2Good)
-a <- clusterICA(x=xGood, nComp=1, randIter=1000, seed=5)
+a <- clusterICA(x=xGood, n.comp=1, rand.iter=1000, seed=5)
 par(mfrow = c(1,3))
 plot(xGood, main = "Pre-processed data")
 plot(a$xw$y, main = "Whitened data")
@@ -85,7 +85,7 @@ plot(density(a$y, bw="sj"), main = "ICA components")
 S <- matrix(runif(10000), 5000, 2)
 A <- matrix(c(1, 1, -1, 3), 2, 2, byrow = TRUE)
 X <- S \%*\% A
-a <- clusterICA(X, p=2, randIter=1000, randOut=50)
+a <- clusterICA(X, p=2, rand.iter=1000, rand.out=50)
 par(mfrow = c(1, 3))
 plot(X, main = "Pre-processed data")
 plot(a$xw$y, main = "Whitened data")

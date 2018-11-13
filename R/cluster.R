@@ -21,7 +21,7 @@ clusterProjPlusPlus <- function(X, K) {
     apply(dist, 1, which.min)
 }
 
-.clusterProjKmeans <- function(X, K, iterMax=100, initial, verbose=TRUE) {
+.clusterProjKmeans <- function(X, K, iter.max=100, initial, verbose=TRUE) {
     n <- nrow(X)
     if(missing(initial)) {
         c <- clusterProjPlusPlus(X, K)
@@ -39,7 +39,7 @@ clusterProjPlusPlus <- function(X, K) {
         } # end else
     
     j <- 0
-    for (i in 1:iterMax) {
+    for (i in 1:iter.max) {
         j <- j + 1
         dist <- matrix(0, nrow=n, ncol=K)
         for (k in 1:K) {
@@ -61,8 +61,8 @@ clusterProjPlusPlus <- function(X, K) {
         }
     }
     if(verbose == TRUE) {
-        if(j < iterMax) cat("Converged to ", K, " clusters in ", j, " iterations \n")
-        if(j == iterMax) cat("Maximum iterations of ", iterMax, " used, consider increasing iterMax \n")
+        if(j < iter.max) cat("Converged to ", K, " clusters in ", j, " iterations \n")
+        if(j == iter.max) cat("Maximum iterations of ", iter.max, " used, consider increasing iter.max \n")
     }
     c
 }
@@ -75,7 +75,7 @@ clusterProjPlusPlus <- function(X, K) {
 #'
 #' @param X the data belonging to the projective space
 #' @param K the number of clusters required in output
-#' @param iterMax the maximum number of iterations
+#' @param iter.max the maximum number of iterations
 #' @param initial (optional) the initial clustering. 
 #'                  The argument 'initial' is required to be a vector of 
 #'                      the same length as number of rows in X.
@@ -103,8 +103,8 @@ clusterProjPlusPlus <- function(X, K) {
 #' (c <- clusterProjKmeans(X, 2))
 #'
 #' @export
-clusterProjKmeans <- function(X, K, iterMax=100, initial) {
-    c <- .clusterProjKmeans(X=X, K=K, iterMax=iterMax, 
+clusterProjKmeans <- function(X, K, iter.max=100, initial) {
+    c <- .clusterProjKmeans(X=X, K=K, iter.max=iter.max, 
                                 initial=initial, verbose=FALSE)
     c
 }
@@ -162,7 +162,7 @@ clusterProjWss <- function(X, c) {
 #' @param tol the tolerance that when reached, stops increasing the number of clusters. 
 #'                  At each step, the (change in wss) / (original wss) must be above this tolerance.
 #'                  In general, as the tolerance decreases, the number of clusters in the output increases.
-#' @param iterMax the maximum number of iterations
+#' @param iter.max the maximum number of iterations
 #'
 #' @return A list with the following components:
 #' \itemize{
@@ -187,7 +187,7 @@ clusterProjWss <- function(X, c) {
 #' (c <- clusterProjDivisive(X=X, tol=0.1))
 #'
 #' @export
-clusterProjDivisive <- function(X, tol, iterMax=100) {
+clusterProjDivisive <- function(X, tol, iter.max=100) {
     stopifnot(tol > 0 && tol <= 1)
 
     p <- ncol(X)
@@ -206,7 +206,7 @@ clusterProjDivisive <- function(X, tol, iterMax=100) {
 	wssAll <- wss
     diffc <- 1
     diffct <- 0
-	while(diffc > tol & i < iterMax) {
+	while(diffc > tol & i < iter.max) {
 		i <- i + 1
 		# select cluster with largest rss 
 		# nb drop=F not needed as clust with only 1 element will not be picked
@@ -230,7 +230,7 @@ clusterProjDivisive <- function(X, tol, iterMax=100) {
 		wssAll[i] <- wss
         diffc <- (wssAll[i-1] - wssAll[i]) / wssAll[1]
 	}
-	if (i == iterMax) warning("Max iterations reached: increase iterMax or tol")
+	if (i == iter.max) warning("Max iterations reached: increase iter.max or tol")
 
 	list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=wssAll)
 }

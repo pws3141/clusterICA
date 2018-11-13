@@ -4,7 +4,7 @@
 \alias{clusterProjDivisive}
 \title{Divisive (hierarchical) clustering on the projective space}
 \usage{
-clusterProjDivisive(X, tol, iterMax = 100)
+clusterProjDivisive(X, tol, iter.max = 100)
 }
 \arguments{
 \item{X}{the data belonging to the projective space}
@@ -13,7 +13,7 @@ clusterProjDivisive(X, tol, iterMax = 100)
 At each step, the (change in wss) / (original wss) must be above this tolerance.
 In general, as the tolerance decreases, the number of clusters in the output increases.}
 
-\item{iterMax}{the maximum number of iterations}
+\item{iter.max}{the maximum number of iterations}
 }
 \value{
 A list with the following components:
