@@ -48,10 +48,9 @@ testMethod(function(X) clusterProjDivisive(X, tol=0.1))
 
 par(mfrow = c(2,2))
 for (i in 1:4) {
-	X1 <- generateData(276, 89, 6)
-	c <- clusterProjDivisive(X1, tol=0.1)
+    X1 <- generateData(276, 89, 6)
+    c <- clusterProjDivisive(X1, tol=0.1)
 
-	diffc <- c$wssAll[-length(c$wssAll)] - c$wssAll[-1]
-	plot(diffc / c$wssAll[1])
+    diffc <- c$wssAll[-length(c$wssAll)] - c$wssAll[-1]
+    plot(diffc / c$wssAll[1])
 }
-

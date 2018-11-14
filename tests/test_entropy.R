@@ -59,7 +59,7 @@ X6 <- matrix(rnorm(15000), ncol=1000, nrow=15)
 
 X <- list(X1, X2, X3, X4, X5, X6)
 for (i in 1:length(X)) {
-    Xi <- X[[i]] 
+    Xi <- X[[i]]
     XiEntrMat <- entropy(Xi)
     for (j in 1:nrow(Xi)) {
         XiEntrr <- entropy(Xi[j,])
@@ -101,7 +101,7 @@ for (j in 1:len_mm) {
         }
         varm[k] <- var(entrm)
     }
-    var_all[j] <- mean(varm) 
+    var_all[j] <- mean(varm)
 }
 # steps in plot relate to floor()
 plot(x=mm, var_all, t="l")
@@ -141,17 +141,11 @@ Xx <- rbind(Xx1, Xx2, Xx3)
 Xx <- t(apply(Xx, 1, function(x) scale(x, scale=TRUE)))
 par(mfrow = c(3,1))
 for (i in 1:3) {
-Xm <- numeric()
-Xxx <- Xx[i,]
+    Xm <- numeric()
+    Xxx <- Xx[i,]
     for (j in 2:(length(Xxx) - 3)) {
         Xm[j-1] <- entropy(Xxx, m=j)
         #if (j/100 == floor(j/100)) cat(j)
     }
     plot(x = 2:(length(Xxx) - 3), y = Xm, type = "b")
 }
-
-
-
-
-
-

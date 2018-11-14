@@ -6,7 +6,6 @@
 # Now that the initial centers have been chosen, proceed using standard k-means clustering.
 clusterProjPlusPlus <- function(X, K) {
     n <- nrow(X)
-    p <- ncol(X)
 
     DX <- rep(1/n, n)
     dist <- matrix(0, nrow=n, ncol=K)
@@ -25,19 +24,19 @@ clusterProjPlusPlus <- function(X, K) {
     n <- nrow(X)
     if(missing(initial)) {
         c <- clusterProjPlusPlus(X, K)
-        } else {
-            # set cluster s.t. they start at 1
-            if(!min(initial) == 1) initial <- initial - min(initial) + 1
-            if (!(length(initial) == n)) {
-                warning("'initial' must be of length n = ", 
-                            n, ". Initialising using kmeans++ instead.")
-                if(missing(K)) K <- max(initial)
-                initial <- clusterProjPlusPlus(X, K)    
-            } # end if
-            c <- initial
-            K <- max(c)
-        } # end else
-    
+    } else {
+        # set cluster s.t. they start at 1
+        if(!min(initial) == 1) initial <- initial - min(initial) + 1
+        if (!(length(initial) == n)) {
+            warning("'initial' must be of length n = ",
+                    n, ". Initialising using kmeans++ instead.")
+            if(missing(K)) K <- max(initial)
+            initial <- clusterProjPlusPlus(X, K)
+        } # end if
+        c <- initial
+        K <- max(c)
+    } # end else
+
     j <- 0
     for (i in 1:iter.max) {
         j <- j + 1
@@ -76,14 +75,14 @@ clusterProjPlusPlus <- function(X, K) {
 #' @param X the data belonging to the projective space
 #' @param K the number of clusters required in output
 #' @param iter.max the maximum number of iterations
-#' @param initial (optional) the initial clustering. 
-#'                  The argument 'initial' is required to be a vector of 
+#' @param initial (optional) the initial clustering.
+#'                  The argument 'initial' is required to be a vector of
 #'                      the same length as number of rows in X.
-#'                  Each element of 'initial' is the cluster number that 
+#'                  Each element of 'initial' is the cluster number that
 #'                      the corresponding row of X belongs to.
-#'                  If 'initial' is specified, than 'K' is set to be the 
+#'                  If 'initial' is specified, than 'K' is set to be the
 #'                      number of clusters in 'initial'
-#'                  If no initial is given, then the initial clusters are 
+#'                  If no initial is given, then the initial clusters are
 #'                      found using the k-means++ method.
 #'
 #' @return Vector of real numbers from 1 to K representing the cluster
@@ -104,8 +103,8 @@ clusterProjPlusPlus <- function(X, K) {
 #'
 #' @export
 clusterProjKmeans <- function(X, K, iter.max=100, initial) {
-    c <- .clusterProjKmeans(X=X, K=K, iter.max=iter.max, 
-                                initial=initial, verbose=FALSE)
+    c <- .clusterProjKmeans(X=X, K=K, iter.max=iter.max,
+                            initial=initial, verbose=FALSE)
     c
 }
 
@@ -142,7 +141,7 @@ clusterProjWss <- function(X, c) {
             # stop numerical error if s$d[1]^2 v. close to nTmp
             #if(SSE < 0) {SSE <- 0}
         }
-        }))
+    }))
     if(any(wssClust < 0)) {
         whichWss <- which(wssClust < 0)
         wssClust[whichWss] <- 0
@@ -159,7 +158,7 @@ clusterProjWss <- function(X, c) {
 #' Creates clusters of points on the projective space using divisive k-means clustering
 #'
 #' @param X the data belonging to the projective space
-#' @param tol the tolerance that when reached, stops increasing the number of clusters. 
+#' @param tol the tolerance that when reached, stops increasing the number of clusters.
 #'                  At each step, the (change in wss) / (original wss) must be above this tolerance.
 #'                  In general, as the tolerance decreases, the number of clusters in the output increases.
 #' @param iter.max the maximum number of iterations
@@ -170,14 +169,14 @@ clusterProjWss <- function(X, c) {
 #'                      that the corresponding X value belongs to.}
 #'          \item{rss} {Vector of the within sum-of-squares for each cluster}
 #'          \item{wss} {The total within sum-of-squares for the outputted cluster}
-#'          \item{wssAll} {The change in total within sum-of-squares for each 
+#'          \item{wssAll} {The change in total within sum-of-squares for each
 #'                              iteration of the function}
 #' }
 #' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
 #' @seealso clusterProjKmeans
 #' @keywords clustering, kmeans
 #'
-#' 
+#'
 #' @examples
 #' n1 <- 37; n2 <- 19
 #' x1 <- rnorm(n1, 6); y1 <- rnorm(n1, 0); z1 <- rnorm(n1, 0, 0.1)
@@ -190,47 +189,45 @@ clusterProjWss <- function(X, c) {
 clusterProjDivisive <- function(X, tol, iter.max=100) {
     stopifnot(tol > 0 && tol <= 1)
 
-    p <- ncol(X)
     n <- nrow(X)
 
-	i <- 1
-	cCurr <- rep(1, n)
-	rssAll <- clusterProjWss(X=X, c=cCurr)	
-	wss <- rssAll$wss
-	if(wss < 10e-16) {
+    i <- 1
+    cCurr <- rep(1, n)
+    rssAll <- clusterProjWss(X=X, c=cCurr)
+    wss <- rssAll$wss
+    if(wss < 10e-16) {
         return(list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=NA))
     }
     if (missing(tol)) tol <- 0.1
 
-	rssMax <- which.max(rssAll$rss)
-	wssAll <- wss
+    rssMax <- which.max(rssAll$rss)
+    wssAll <- wss
     diffc <- 1
-    diffct <- 0
-	while(diffc > tol & i < iter.max) {
-		i <- i + 1
-		# select cluster with largest rss 
-		# nb drop=F not needed as clust with only 1 element will not be picked
-		clustMax <- X[cCurr == rssMax, , drop=FALSE]
+    while(diffc > tol & i < iter.max) {
+        i <- i + 1
+        # select cluster with largest rss
+        # nb drop=F not needed as clust with only 1 element will not be picked
+        clustMax <- X[cCurr == rssMax, , drop=FALSE]
 
-		# split this cluster into two using kmeans
-		cTmp <- clusterProjKmeans(X=clustMax, K=2)
+        # split this cluster into two using kmeans
+        cTmp <- clusterProjKmeans(X=clustMax, K=2)
 
-		# rearrange cCurr so that we can add c=1 and c=2 for new clust
-		whichCurr <- which(cCurr==rssMax)
-		if(rssMax > 1) cCurr[cCurr < rssMax] <- cCurr[cCurr < rssMax] + 1
-		cCurr[-whichCurr] <- cCurr[-whichCurr] + 1
-		# add new clust to beginning
-		cCurr[whichCurr] <- cTmp
-		
-		# find which cluster has largest RSS
-		# this is at end of loop so that wss > tol_wss is correct
-		rssAll <- clusterProjWss(X=X, c=cCurr)
-		rssMax <- which.max(rssAll$rss)
-		wss <- rssAll$wss
-		wssAll[i] <- wss
+        # rearrange cCurr so that we can add c=1 and c=2 for new clust
+        whichCurr <- which(cCurr==rssMax)
+        if(rssMax > 1) cCurr[cCurr < rssMax] <- cCurr[cCurr < rssMax] + 1
+        cCurr[-whichCurr] <- cCurr[-whichCurr] + 1
+        # add new clust to beginning
+        cCurr[whichCurr] <- cTmp
+
+        # find which cluster has largest RSS
+        # this is at end of loop so that wss > tol_wss is correct
+        rssAll <- clusterProjWss(X=X, c=cCurr)
+        rssMax <- which.max(rssAll$rss)
+        wss <- rssAll$wss
+        wssAll[i] <- wss
         diffc <- (wssAll[i-1] - wssAll[i]) / wssAll[1]
-	}
-	if (i == iter.max) warning("Max iterations reached: increase iter.max or tol")
+    }
+    if (i == iter.max) warning("Max iterations reached: increase iter.max or tol")
 
-	list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=wssAll)
+    list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=wssAll)
 }
