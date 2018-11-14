@@ -116,9 +116,9 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
                  }, method = opt.method, control = list(maxit = maxit))
     
     if (opt$convergence == 1) {
-        warning("In loading", k, ", cluster ", cluster, " optimisation did not converge, consider increasing maxit \n")
+        warning("In loading ", k, ", cluster ", cluster, " optimisation did not converge, consider increasing maxit \n")
     } else if (opt$convergence != 0) {
-        warning("In loading", k, ", cluster ", cluster, " optimisation did not converge (error ", opt$convergence, ") \n")
+        warning("In loading ", k, ", cluster ", cluster, " optimisation did not converge (error ", opt$convergence, ") \n")
     }
     
     entrTmp <- opt$value

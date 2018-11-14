@@ -133,14 +133,11 @@ clusterProjWss <- function(X, c) {
     }
     wssClust <- unlist(sapply(clust, function(x) {
         nTmp <- nrow(x)
-        # TODO: make this if statement redundant. Don't want empty clusters
         if(nTmp == 0) {
             SEE <- 0
         } else {
             s <- La.svd(x, nu=0, nv=1)
             SSE <- nTmp - s$d[1]^2
-            # stop numerical error if s$d[1]^2 v. close to nTmp
-            #if(SSE < 0) {SSE <- 0}
         }
         }))
     if(any(wssClust < 0)) {
