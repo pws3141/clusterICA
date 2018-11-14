@@ -2,15 +2,15 @@
 #' Entropy estimation using m-spacing
 #'
 #' Calculates entropy using m-spacing.
-#' 
+#'
 #'
 #' @param x the data, either a vector or matrix.
 #'              If x is a matrix, entropy is estimated for each row separately.
-#' @param m (optional) the m-spacing. Defaults to m <- sqrt(n) 
-#'              if missing, where n is length(x) if x is a vector, 
+#' @param m (optional) the m-spacing. Defaults to m <- sqrt(n)
+#'              if missing, where n is length(x) if x is a vector,
 #'                  or ncol(x) if a matrix
 #'
-#' @return Vector of real numbers corresponding to the approximate 
+#' @return Vector of real numbers corresponding to the approximate
 #'              entropy for each row of input x.
 #'
 #'
@@ -26,7 +26,7 @@
 #' X <- list(X1, X2, X3, X4)
 #' XiEntr <- vector("list", length = length(X))
 #' for (i in 1:length(X)) {
-#'     Xi <- X[[i]] 
+#'     Xi <- X[[i]]
 #'     XiEntr_mat <- entropy(Xi)
 #'     XiEntr[[i]] <- XiEntr_mat
 #' }
@@ -41,9 +41,9 @@ entropy <- function(x, m) {
     xt <- apply(x, 1, function(x) sort(x))
     n <- nrow(xt)
     if(missing(m)) m <- floor(sqrt(n))
-    
+
     d <- xt[(m+1):n,, drop=FALSE] - xt[1:(n-m),, drop=FALSE]
     apply(d, 2, function(dd) {
-                        (1/n) * sum(log(n * dd / m))
-                    }) - digamma(m) + log(m)
+        (1/n) * sum(log(n * dd / m))
+    }) - digamma(m) + log(m)
 }

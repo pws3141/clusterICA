@@ -16,10 +16,10 @@
 #' @param kmean.iter the maximum number of iterations used in divisive clustering, see clusterProjDivisive
 #' @param opt.maxit the maximum number of iterations used in the optimisation step, see optim
 #' @param opt.method the method used in the optimisation step, see optim
-#' @param size.clust (optional) if size.clust = k > 1, then optimisation is performed on k random directions in each cluster. 
+#' @param size.clust (optional) if size.clust = k > 1, then optimisation is performed on k random directions in each cluster.
 #'                      If missing, then optimisation is performed on the best direction in each cluster.
 #' @param compute.scores if TRUE then scores of the whitened data are outputted
-#' @param verbose if TRUE then information is given on the status of the function 
+#' @param verbose if TRUE then information is given on the status of the function
 #' @return A list with the following components:
 #'         \itemize{
 #'              \item{xw} {The output from jvcoords::whiten(x)}
@@ -32,7 +32,7 @@
 # #' @seealso clusterProjKmeans()
 #' @keywords independent component analysis, entropy, clustering
 #'
-#' 
+#'
 #' @examples
 #' #---------------------------------------------------
 #' #Example 1: un-mixing two stratified independent normals
@@ -77,11 +77,10 @@
 #' plot(a$y, main = "ICA components")
 #' pairs(a$y, col=iris$Species)
 #' @export
-clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed, 
-                    kmean.tol=0.1, kmean.iter=100,
-                    opt.maxit=1000, opt.method="Nelder-Mead",
-                    size.clust, compute.scores = TRUE, verbose=FALSE) {
-    
+clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
+                       kmean.tol=0.1, kmean.iter=100,
+                       opt.maxit=1000, opt.method="Nelder-Mead",
+                       size.clust, compute.scores = TRUE, verbose=FALSE) {
     # check if we have whitened data
     # here p is how many PCA loadings we use to do ICA on
     # n.comp is how many ICA loadings we want outputted
@@ -107,7 +106,7 @@ clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
 
     # some error checking
     if(n.comp > (p)) {
-        warning("n.comp = ", n.comp, " must be less than p + 1 = ", 
+        warning("n.comp = ", n.comp, " must be less than p + 1 = ",
                 (p+1), ". Set n.comp = p.")
         n.comp <- p
     }
@@ -123,39 +122,39 @@ clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
             cat("optimising direction", k, "out of", n.comp, "\n")
         }
         r <- p - k + 1 # the dimension of the search space
-        
+
         if (verbose == TRUE) {
             cat("// Finding random starting points", "\n")
         }
         randDir <- randDirs(z=z, IC=IC, k=k, m=m, iter=rand.iter, out=rand.out,
-                              seed=seed)
+                            seed=seed)
         if (verbose == TRUE) {
-            cat("/// Found ", length(randDir$entr), " starting directions", "\n", 
-            sep="")
+            cat("/// Found ", length(randDir$entr), " starting directions", "\n",
+                sep="")
         }
-        
+
         if (verbose == TRUE) {
             cat("/// Sorting these into clusters \n")
         }
         # do we want to save all directions in each cluster,
         # or just the best (pre-optim)
         if(!missing(size.clust) && size.clust < 1 && size.clust > -1) {
-                warning("size.clust must be >= 1. Set size.clust = 1")
-                size.clust <- 1L
-            }
+            warning("size.clust must be >= 1. Set size.clust = 1")
+            size.clust <- 1L
+        }
         if(!missing(size.clust) && size.clust < -1) {
-                warning("size.clust must be >= 1. Set size.clust = ", 
-                            as.integer(-size.clust))
-                size.clust <- as.integer(-size.clust)
-            }
+            warning("size.clust must be >= 1. Set size.clust = ",
+                    as.integer(-size.clust))
+            size.clust <- as.integer(-size.clust)
+        }
         if(!missing(size.clust) && (size.clust > 1)) {
             best.dirs <- clusterNorm(z = z, IC=IC, k=k, m=m,
-                                      dirs=randDir, kmean.tol=kmean.tol,
-                                      kmean.iter=kmean.iter, save.all=TRUE)
+                                     dirs=randDir, kmean.tol=kmean.tol,
+                                     kmean.iter=kmean.iter, save.all=TRUE)
         } else {
             best.dirs <- clusterNorm(z = z, IC=IC, k=k, m=m,
-                                      dirs=randDir, kmean.tol=kmean.tol,
-                                      kmean.iter=kmean.iter)
+                                     dirs=randDir, kmean.tol=kmean.tol,
+                                     kmean.iter=kmean.iter)
         }
 
         if (verbose == TRUE) {
@@ -165,21 +164,21 @@ clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
         if (verbose == TRUE) {
             cat("//// Best pre-optim entropy = ", min(entrPreOptim), "\n", sep="")
         }
-        
+
         # step 2: use local optimisation to find the best solution in the
         # each cluster
         if (verbose == TRUE) {
             cat("//// Optimising ", length(best.dirs), " clusters", "\n", sep="")
         }
         icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
-                                    best.dirs=best.dirs, maxit = opt.maxit,
-                                    opt.method=opt.method, size.clust=size.clust,
-                                    verbose=verbose)
+                                  best.dirs=best.dirs, maxit = opt.maxit,
+                                  opt.method=opt.method, size.clust=size.clust,
+                                  verbose=verbose)
         if(!missing(size.clust) && (size.clust > 1)) {
             icaLoading <- icaLoading$best
         }
         if (verbose == TRUE) {
-            cat("//// Optimised direction has entropy ", 
+            cat("//// Optimised direction has entropy ",
                 icaLoading$dir_entr, "\n", sep="")
         }
         bestEntr <- icaLoading$dir_entr
