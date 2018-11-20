@@ -34,7 +34,7 @@ clusterICA(x, xw, m, n.comp, p, rand.iter = 5000, rand.out = 100, seed,
 
 \item{opt.method}{the method used in the optimisation step, see optim}
 
-\item{size.clust}{(optional) if size.clust = k > 1, then optimisation is performed on k random directions in each cluster. 
+\item{size.clust}{(optional) if size.clust = k > 1, then optimisation is performed on k random directions in each cluster.
 If missing, then optimisation is performed on the best direction in each cluster.}
 
 \item{compute.scores}{if TRUE then scores of the whitened data are outputted}

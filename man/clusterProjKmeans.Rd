@@ -13,14 +13,14 @@ clusterProjKmeans(X, K, iter.max = 100, initial)
 
 \item{iter.max}{the maximum number of iterations}
 
-\item{initial}{(optional) the initial clustering. 
-The argument 'initial' is required to be a vector of 
+\item{initial}{(optional) the initial clustering.
+The argument 'initial' is required to be a vector of
     the same length as number of rows in X.
-Each element of 'initial' is the cluster number that 
+Each element of 'initial' is the cluster number that
     the corresponding row of X belongs to.
-If 'initial' is specified, than 'K' is set to be the 
+If 'initial' is specified, than 'K' is set to be the
     number of clusters in 'initial'
-If no initial is given, then the initial clusters are 
+If no initial is given, then the initial clusters are
     found using the k-means++ method.}
 }
 \value{

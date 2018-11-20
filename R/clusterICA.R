@@ -100,9 +100,14 @@ clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
     z <- xw$y
 
     n <- nrow(z)
-    if(missing(p)) p <- ncol(z)
+    if(missing(p)) {
+        p <- ncol(z)
+        } else {
+            z <- z[,1:p]
+        }
     if(missing(n.comp)) n.comp <- p
     if(missing(m)) m <- floor(sqrt(n))
+
 
     # some error checking
     if(n.comp > (p)) {
@@ -117,7 +122,9 @@ clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
     IC <- diag(p)
     loopNum <- n.comp
     if (loopNum == p) loopNum <- p - 1
-    for(k in 1:loopNum) {
+    k <- 1
+    while (k <= loopNum) {
+    #for(k in 1:loopNum) {
         if (verbose == TRUE) {
             cat("optimising direction", k, "out of", n.comp, "\n")
         }
@@ -179,14 +186,44 @@ clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
         }
         if (verbose == TRUE) {
             cat("//// Optimised direction has entropy ",
-                icaLoading$dir_entr, "\n", sep="")
+                icaLoading$dirEntr, "\n", sep="")
         }
-        bestEntr <- icaLoading$dir_entr
+        bestEntr <- icaLoading$dirEntr
         bestDir <- icaLoading$dirOptim
+
+        # is this projection better than any previous projections?
+        if(any(bestEntr < entr)) {
+            k_tmp <- min(which(bestEntr < entr))
+            lenBestDir <- length(bestDir)
+            r_tmp <- (p - k_tmp + 1)
+            cat("k = ", k, ", k_tmp = ", k_tmp, ", r_tmp = ", r_tmp, ", lenBestDir = ", lenBestDir, "\n")
+            bestDir <- c(rep(0, times=(r_tmp-lenBestDir)), bestDir)
+            trialsOrigSpace <- bestDir %*% t(IC[,k_tmp:p])
+            # switch to columns for each trial so that entr works
+            trialsProj <- trialsOrigSpace %*% t(z[,1:p])
+            newEntr <- entropy(trialsProj, m=m)
+            k <- k_tmp
+            r <- p - k + 1 # the dimension of the search space
+            dirTmp <- vector("list", length=1)
+            dirTmp[[1]]$dirs <- bestDir
+            dirTmp[[1]]$entr <- newEntr
+            icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
+                                  best.dirs=dirTmp, maxit = opt.maxit,
+                                  opt.method=opt.method, size.clust=size.clust,
+                                  verbose=verbose)
+            bestDir <- icaLoading$dirOptim
+            bestEntr <- icaLoading$dirEntr
+            entr <- entr[1:k_tmp]
+            if (verbose == TRUE) {
+                cat("///// Current projection better than ", k, "th projection", "\n")               
+                cat("///// Replacing ", k, "th projection", "\n")               
+            }
+        }
 
         if (verbose == TRUE) {
             cat("///// Householder reflection", "\n")
         }
+        entr[k] <- bestEntr
         # Use a Householder reflection which maps e1 to best.dir to update IC.
         e1 <- c(1, rep(0, r-1))
         # from wiki: take sign of x_k s.t.
@@ -196,7 +233,7 @@ clusterICA <- function(x, xw, m, n.comp, p, rand.iter=5000, rand.out=100, seed,
         v <- v / sqrt(sum(v^2))
         P <- diag(r) - 2 * tcrossprod(v)
         IC[,k:p] <- IC[,k:p,drop=FALSE] %*% P
-        entr[k] <- bestEntr
+        k <- k + 1
     }
 
     if (n.comp == p) {

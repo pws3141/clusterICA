@@ -9,7 +9,7 @@ clusterProjDivisive(X, tol, iter.max = 100)
 \arguments{
 \item{X}{the data belonging to the projective space}
 
-\item{tol}{the tolerance that when reached, stops increasing the number of clusters. 
+\item{tol}{the tolerance that when reached, stops increasing the number of clusters.
 At each step, the (change in wss) / (original wss) must be above this tolerance.
 In general, as the tolerance decreases, the number of clusters in the output increases.}
 
@@ -22,7 +22,7 @@ A list with the following components:
                      that the corresponding X value belongs to.}
          \item{rss} {Vector of the within sum-of-squares for each cluster}
          \item{wss} {The total within sum-of-squares for the outputted cluster}
-         \item{wssAll} {The change in total within sum-of-squares for each 
+         \item{wssAll} {The change in total within sum-of-squares for each
                              iteration of the function}
 }
 }

@@ -10,12 +10,12 @@ entropy(x, m)
 \item{x}{the data, either a vector or matrix.
 If x is a matrix, entropy is estimated for each row separately.}
 
-\item{m}{(optional) the m-spacing. Defaults to m <- sqrt(n) 
-if missing, where n is length(x) if x is a vector, 
+\item{m}{(optional) the m-spacing. Defaults to m <- sqrt(n)
+if missing, where n is length(x) if x is a vector,
     or ncol(x) if a matrix}
 }
 \value{
-Vector of real numbers corresponding to the approximate 
+Vector of real numbers corresponding to the approximate
              entropy for each row of input x.
 }
 \description{
@@ -29,7 +29,7 @@ X4 <- matrix(rnorm(1500), ncol=100, nrow=15)
 X <- list(X1, X2, X3, X4)
 XiEntr <- vector("list", length = length(X))
 for (i in 1:length(X)) {
-    Xi <- X[[i]] 
+    Xi <- X[[i]]
     XiEntr_mat <- entropy(Xi)
     XiEntr[[i]] <- XiEntr_mat
 }

@@ -3,7 +3,8 @@
 # The value associated with the less ``important'' whitening loadings
 # have more probability of being zero
 randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
-    p <- ncol(z)
+    p <- ncol(IC)
+
     r <- p - k + 1 # the dimension of the search space
 
     if (!missing(seed)) set.seed(seed)
@@ -24,7 +25,7 @@ randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
     trialsMat <- trialsMat / sqrt(rowSums(trialsMat^2))
     trialsOrigSpace <- trialsMat %*% t(IC[,k:p])
     # switch to columns for each trial so that entr works
-    trialsProj <- trialsOrigSpace %*% t(z)
+    trialsProj <- trialsOrigSpace %*% t(z[,1:p])
     entr <- entropy(trialsProj, m=m)
 
     dirTable <- cbind(entr, trialsMat)
@@ -57,7 +58,7 @@ randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
 # uses divisive kmeans clustering from clusterProjDivisive
 clusterNorm <- function(z, IC, k, m, dirs, kmean.tol=0.1,
                         kmean.iter=100, save.all=FALSE, clust.avg=FALSE) {
-    p <- ncol(z)
+    p <- ncol(IC)
 
     entr <- dirs$entr
     dirs <- dirs$dirs
@@ -135,7 +136,7 @@ icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
                         opt.method="Nelder-Mead", size.clust,
                         clust.avg=FALSE, verbose=FALSE) {
     n <- nrow(z)
-    p <- ncol(z)
+    p <- ncol(IC)
 
     clusters <- length(best.dirs)
     if (verbose == TRUE) {
@@ -193,7 +194,7 @@ icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
     clusterNum <- which.min(dirOpt[,1])
     output <- list()
     output$clusterNum <- clusterNum
-    output$dir_entr <- dirOpt[clusterNum, 1]
+    output$dirEntr <- dirOpt[clusterNum, 1]
     output$dirOptim <- dirOpt[clusterNum, -1]
     if (any(nn > 1)) {
         return(list(best=output, all=dirOptMany))
