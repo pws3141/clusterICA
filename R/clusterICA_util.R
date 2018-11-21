@@ -57,7 +57,7 @@ randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
 # put random directions into clusters
 # uses divisive kmeans clustering from clusterProjDivisive
 clusterNorm <- function(z, IC, k, m, dirs, kmean.tol=0.1,
-                        kmean.iter=100, save.all=FALSE, clust.avg=FALSE) {
+                        kmean.iter, save.all=FALSE, clust.avg=FALSE) {
     p <- ncol(IC)
 
     entr <- dirs$entr
@@ -133,7 +133,7 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
 # create a single ICA loading from clustered random projections
 # input is from clusterNorm
 icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
-                        opt.method="Nelder-Mead", size.clust,
+                        opt.method="Nelder-Mead",
                         clust.avg=FALSE, verbose=FALSE) {
     n <- nrow(z)
     p <- ncol(IC)
@@ -160,12 +160,7 @@ icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
                                   cluster=i, opt.method=opt.method)
 
         } else {
-            # randomly choose size.clust dirs to optimise in each cluser
-            if(is.numeric(size.clust)) {
-                samp <- sample(nTmp, size = min(size.clust, nTmp))
-            } else {
-                samp <- seq_len(nTmp)
-            }
+            samp <- seq_len(nTmp)
             dirOpt_clust <- lapply(samp, function(j) {
                 dirr <- dirTmp$dirs[j,]
                 dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirr,

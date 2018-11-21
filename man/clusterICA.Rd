@@ -4,10 +4,9 @@
 \alias{clusterICA}
 \title{Independent Component Analysis (ICA)}
 \usage{
-clusterICA(x, xw, m, n.comp, p, rand.iter = 5000, rand.out = 100, seed,
-  kmean.tol = 0.1, kmean.iter = 100, opt.maxit = 1000,
-  opt.method = "Nelder-Mead", size.clust, compute.scores = TRUE,
-  verbose = FALSE)
+clusterICA(x, xw, m, n.comp, whiten.p, rand.iter, kmean.tol = 0.1,
+  opt.maxit = 5000, opt.method = "Nelder-Mead",
+  compute.scores = TRUE, verbose = FALSE, seed)
 }
 \arguments{
 \item{x}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
@@ -18,28 +17,21 @@ clusterICA(x, xw, m, n.comp, p, rand.iter = 5000, rand.out = 100, seed,
 
 \item{n.comp}{the number of ICA loadings outputted}
 
-\item{p}{(optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step}
+\item{whiten.p}{(optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step}
 
 \item{rand.iter}{the number of random directions to initialise}
 
-\item{rand.out}{the number of the best random directions to keep}
-
-\item{seed}{(optional) the set.seed number used for initialising the random directions}
-
 \item{kmean.tol}{the tolerance used in divisive clustering, see clusterProjDivisive}
-
-\item{kmean.iter}{the maximum number of iterations used in divisive clustering, see clusterProjDivisive}
 
 \item{opt.maxit}{the maximum number of iterations used in the optimisation step, see optim}
 
 \item{opt.method}{the method used in the optimisation step, see optim}
 
-\item{size.clust}{(optional) if size.clust = k > 1, then optimisation is performed on k random directions in each cluster.
-If missing, then optimisation is performed on the best direction in each cluster.}
-
 \item{compute.scores}{if TRUE then scores of the whitened data are outputted}
 
 \item{verbose}{if TRUE then information is given on the status of the function}
+
+\item{seed}{(optional) the set.seed number used for initialising the random directions}
 }
 \value{
 A list with the following components:
@@ -85,7 +77,7 @@ plot(density(a$y, bw="sj"), main = "ICA components")
 S <- matrix(runif(10000), 5000, 2)
 A <- matrix(c(1, 1, -1, 3), 2, 2, byrow = TRUE)
 X <- S \%*\% A
-a <- clusterICA(X, p=2, rand.iter=1000, rand.out=50)
+a <- clusterICA(X, whiten.p=2, rand.iter=1000)
 par(mfrow = c(1, 3))
 plot(X, main = "Pre-processed data")
 plot(a$xw$y, main = "Whitened data")

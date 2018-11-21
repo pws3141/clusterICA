@@ -224,7 +224,7 @@ clusterProjDivisive <- function(X, tol, iter.max=100) {
         wssAll[i] <- wss
         diffc <- (wssAll[i-1] - wssAll[i]) / wssAll[1]
     }
-    if (i == iter.max) warning("Max iterations reached: increase iter.max or tol")
+    if (i == iter.max) warning("Max iterations reached: increase kmeans.tol")
 
     list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=wssAll)
 }
