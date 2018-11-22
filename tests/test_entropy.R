@@ -41,13 +41,13 @@ testMethod <- function(fn) {
     print(res)
 }
 
-testMethod(function(X) entropy(X))
+testMethod(function(X) mSpacingEntropy(X))
 
 
 # check for any numerical errors
 set.seed(1234)
 X <- matrix(rep(-4:5,by=1,each=100) + rnorm(1000, sd=10e-12), ncol=100, byrow=TRUE)
-stopifnot(!any(is.nan(entropy(X))))
+stopifnot(!any(is.nan(mSpacingEntropy(X))))
 
 # check that matrix = rbind() gives same as indivdual inputs
 X1 <- matrix(rnorm(150), ncol=15, nrow=10)
@@ -60,9 +60,9 @@ X6 <- matrix(rnorm(15000), ncol=1000, nrow=15)
 X <- list(X1, X2, X3, X4, X5, X6)
 for (i in 1:length(X)) {
     Xi <- X[[i]]
-    XiEntrMat <- entropy(Xi)
+    XiEntrMat <- mSpacingEntropy(Xi)
     for (j in 1:nrow(Xi)) {
-        XiEntrr <- entropy(Xi[j,])
+        XiEntrr <- mSpacingEntropy(Xi[j,])
         stopifnot(XiEntrr == XiEntrMat[j])
     }
 }
@@ -77,7 +77,7 @@ for (i in 1:150) {
     mm <- floor(sqrt(iter[i+1]))
     set.seed(10)
     Xx <- rnorm(iter[i+1])
-    entrm[i] <- entropy(Xx, m = 3)
+    entrm[i] <- mSpacingEntropy(Xx, m = 3)
 }
 plot(iter[-1], entrm, type ="l", log='x', ylim=c(1,1.42))
 # true value of entropy
@@ -97,7 +97,7 @@ for (j in 1:len_mm) {
         for (i in 1:50) {
             set.seed(k*(13420 + i*iter))
             Xx <- rnorm(iter)
-            entrm[i] <- entropy(Xx, m = mm_tmp)
+            entrm[i] <- mSpacingEntropy(Xx, m = mm_tmp)
         }
         varm[k] <- var(entrm)
     }
@@ -117,7 +117,7 @@ for (k in 1:len_mm) {
     for (i in 1:100) {
         set.seed(k*(14420 + i*iter))
         Xx <- rgamma(iter, shape = 0.5)
-        entrm[i] <- entropy(Xx, m = mm_tmp)
+        entrm[i] <- mSpacingEntropy(Xx, m = mm_tmp)
     }
     varm[[k]] <- entrm
 }
@@ -144,7 +144,7 @@ for (i in 1:3) {
     Xm <- numeric()
     Xxx <- Xx[i,]
     for (j in 2:(length(Xxx) - 3)) {
-        Xm[j-1] <- entropy(Xxx, m=j)
+        Xm[j-1] <- mSpacingEntropy(Xxx, m=j)
         #if (j/100 == floor(j/100)) cat(j)
     }
     plot(x = 2:(length(Xxx) - 3), y = Xm, type = "b")

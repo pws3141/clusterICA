@@ -26,7 +26,7 @@ randDirs <- function(z, IC, k, m, iter=5000, out, seed) {
     trialsOrigSpace <- trialsMat %*% t(IC[,k:p])
     # switch to columns for each trial so that entr works
     trialsProj <- trialsOrigSpace %*% t(z[,1:p])
-    entr <- entropy(trialsProj, m=m)
+    entr <- mSpacingEntropy(trialsProj, m=m)
 
     dirTable <- cbind(entr, trialsMat)
     # arange in order
@@ -90,7 +90,7 @@ clusterNorm <- function(z, IC, k, m, dirs, kmean.tol=0.1,
                 # calc entropy of centre
                 centreOrigSpace <- centre %*% t(IC[,k:p])
                 centreProj <- centreOrigSpace %*% t(z)
-                entr <- entropy(centreProj, m=m)
+                entr <- mSpacingEntropy(centreProj, m=m)
                 outTmp[[i]]$entr <- entr
             }
         }
@@ -111,7 +111,7 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
                      w <- w / sqrt(sum(w^2))
                      wOrigSpace <- IC %*% c(rep(0, k-1), w)
                      zProj <- t(z %*% wOrigSpace)
-                     entropy(zProj, m = m)
+                     mSpacingEntropy(zProj, m = m)
                  }, method = opt.method, control = list(maxit = maxit))
 
     if (opt$convergence == 1) {

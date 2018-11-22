@@ -27,13 +27,13 @@
 #' XiEntr <- vector("list", length = length(X))
 #' for (i in 1:length(X)) {
 #'     Xi <- X[[i]]
-#'     XiEntr_mat <- entropy(Xi)
+#'     XiEntr_mat <- mSpacingEntropy(Xi)
 #'     XiEntr[[i]] <- XiEntr_mat
 #' }
 #' str(XiEntr)
 #'
 #' @export
-entropy <- function(x, m) {
+mSpacingEntropy <- function(x, m) {
     if(is.vector(x)) x <- matrix(x, nrow=1)
     if(ncol(x) == 1) stop("require p > 1")
 

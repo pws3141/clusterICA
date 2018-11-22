@@ -180,7 +180,7 @@ clusterICA <- function(x, xw, m, n.comp, whiten.p, rand.iter,
             trialsOrigSpace <- bestDir %*% t(IC[,k_tmp:p])
             # switch to columns for each trial so that entr works
             trialsProj <- trialsOrigSpace %*% t(z[,1:p])
-            newEntr <- entropy(trialsProj, m=m)
+            newEntr <- mSpacingEntropy(trialsProj, m=m)
             k <- k_tmp
             r <- p - k + 1 # the dimension of the search space
             dirTmp <- vector("list", length=1)
@@ -193,8 +193,8 @@ clusterICA <- function(x, xw, m, n.comp, whiten.p, rand.iter,
             bestEntr <- icaLoading$dirEntr
             entr <- entr[1:k_tmp]
             if (verbose == TRUE) {
-                cat("///// Current projection better than ", k, "th projection", "\n")               
-                cat("///// Replacing ", k, "th projection", "\n")               
+                cat("///// Current projection better than ", k, "th projection", "\n")
+                cat("///// Replacing ", k, "th projection", "\n")
             }
         }
 
@@ -218,7 +218,7 @@ clusterICA <- function(x, xw, m, n.comp, whiten.p, rand.iter,
         bestDir <- 1
         wOrigSpace <- IC %*% c(rep(0, p-1), bestDir)
         zProj <- t(z %*% wOrigSpace)
-        bestEntr <- entropy(zProj, m = m)
+        bestEntr <- mSpacingEntropy(zProj, m = m)
         entr[p] <- bestEntr
     }
 
