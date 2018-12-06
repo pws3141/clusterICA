@@ -225,7 +225,7 @@ clusterICA <- function(x, xw, m, n.comp, whiten.p, rand.iter,
     IC <- IC[, seq_len(n.comp), drop=FALSE]
 
     colnames(IC) <- paste0('IC', seq_len(n.comp))
-    rownames(IC) <- rownames(xw$loadings)
+    #rownames(IC) <- rownames(xw$loadings)
 
     res <- list()
     res$xw <- xw

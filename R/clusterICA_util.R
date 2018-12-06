@@ -107,12 +107,16 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
     n <- ncol(z)
 
     opt <- optim(par = dirs,
-                 function(w) {
-                     w <- w / sqrt(sum(w^2))
-                     wOrigSpace <- IC %*% c(rep(0, k-1), w)
-                     zProj <- t(z %*% wOrigSpace)
-                     mSpacingEntropy(zProj, m = m)
-                 }, method = opt.method, control = list(maxit = maxit))
+                 fn=function(w) {
+			w <- w / sqrt(sum(w^2))
+			wOrigSpace <- IC %*% c(rep(0, k-1), w)
+			#zProj <- t(z %*% wOrigSpace)
+			optimEntropy(w=wOrigSpace, x=z, m=m)
+			#mSpacingEntropy(zProj, m = m)
+                 }, 
+		gr=function(w) optimEntropyDeriv(w, x=z, m=m),
+		lower=-Inf, upper=(0.5 * (log(2 * pi) + 1)),
+		method = opt.method, control = list(maxit = maxit, trace=3))
 
     if (opt$convergence == 1) {
         warning("In loading ", k, ", cluster ", cluster, " optimisation did not converge, consider increasing maxit \n")

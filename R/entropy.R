@@ -47,3 +47,26 @@ mSpacingEntropy <- function(x, m) {
         (1/n) * sum(log(n * dd / m))
     }) - digamma(m) + log(m)
 }
+
+optimEntropy <- function(w, x, m) {
+	xw <- as.vector(x %*% w)
+	res <- mSpacingEntropy(x=xw, m=m)
+	res
+}
+ 
+optimEntropyDeriv <- function(w, x, m) {
+	#nb: here we require w to be a vector
+	xw <- as.vector(x %*% w)
+	n <- length(xw)
+	if(missing(m)) m <- floor(sqrt(n))
+	xwOrd <- order(xw, decreasing = FALSE)
+	xSort <- x[xwOrd,]
+	xwSort <- xw[xwOrd]
+	d <- xwSort[(m+1):n] - xwSort[1:(n-m)]
+	resSum <- apply(xSort, 2, function(xs) {
+				xsm <- xs[(m+1):n] - xs[1:(n-m)]
+				sum(xsm / d)
+			})
+	res <- (1 / n) * resSum
+	res
+}
