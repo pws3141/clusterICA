@@ -192,7 +192,7 @@ clusterProjDivisive <- function(X, tol, iter.max=100) {
     cCurr <- rep(1, n)
     rssAll <- clusterProjWss(X=X, c=cCurr)
     wss <- rssAll$wss
-    if(wss < 10e-16) {
+    if(wss < 1e-10) {
         return(list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=NA))
     }
     if (missing(tol)) tol <- 0.1

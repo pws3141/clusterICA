@@ -1,21 +1,19 @@
-# ICA function
+# ICA function{{{
 #' Independent Component Analysis (ICA)
 #'
 #' Uses random directions, clustering and optimisation to obtain ICA loadings,
 #'  using the m-spacing entropy estimation as the objective function to minimise.
 #'
 #' @param x the data to perform ICA on, ncol(x) = n, nrow(x) = p
-#' @param xw (optional) the whitened version of x
 #' @param m (optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)
-#' @param n.comp the number of ICA loadings outputted
-#' @param whiten.p (optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step
+#' @param p.ica the number of ICA loadings outputted
+#' @param p.whiten (optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step
 #' @param rand.iter the number of random directions to initialise
 #' @param kmean.tol the tolerance used in divisive clustering, see clusterProjDivisive
 #' @param opt.maxit the maximum number of iterations used in the optimisation step, see optim
 #' @param opt.method the method used in the optimisation step, see optim
 #' @param compute.scores if TRUE then scores of the whitened data are outputted
 #' @param verbose if TRUE then information is given on the status of the function
-#' @param seed (optional) the set.seed number used for initialising the random directions
 #' @return A list with the following components:
 #'         \itemize{
 #'              \item{xw} {The output from jvcoords::whiten(x)}
@@ -47,11 +45,11 @@
 #' good2 <- cos(20 * x2 %*% a1) >= 0
 #' x2Good <- x2[which(good2),]
 #' xGood <- rbind(x1Good, x2Good)
-#' a <- clusterICA(x=xGood, n.comp=1, rand.iter=1000, seed=5)
+#' a <- clusterICA(x=xGood, p.ica=1, rand.iter=1000)
 #' par(mfrow = c(1,3))
 #' plot(xGood, main = "Pre-processed data")
-#' plot(a$xw$y, main = "Whitened data")
-#' plot(density(a$y, bw="sj"), main = "ICA components")
+#' plot(a$y, main = "Whitened data")
+#' plot(density(a$s, bw="sj"), main = "ICA components")
 #'
 #' #---------------------------------------------------
 #' #Example 2: un-mixing two mixed independent uniforms
@@ -60,181 +58,190 @@
 #' S <- matrix(runif(10000), 5000, 2)
 #' A <- matrix(c(1, 1, -1, 3), 2, 2, byrow = TRUE)
 #' X <- S %*% A
-#' a <- clusterICA(X, whiten.p=2, rand.iter=1000)
+#' a <- clusterICA(X, p.whiten=2, rand.iter=1000)
 #' par(mfrow = c(1, 3))
 #' plot(X, main = "Pre-processed data")
-#' plot(a$xw$y, main = "Whitened data")
-#' plot(a$y, main = "ICA components")
+#' plot(a$y, main = "Whitened data")
+#' plot(a$s, main = "ICA components")
 #'
 #' #---------------------------------------------------
 #' #Example 3: un-mixing iris data
 #' #---------------------------------------------------
 #' a <- clusterICA(iris[,1:4])
-#' plot(a$y, main = "ICA components")
-#' pairs(a$y, col=iris$Species)
+#' plot(a$s, main = "ICA components")
+#' pairs(a$s, col=iris$Species)
 #' @export
-clusterICA <- function(x, xw, m, n.comp, whiten.p, rand.iter,
-                       kmean.tol=0.1, opt.maxit=5000, opt.method="Nelder-Mead",
-                       compute.scores = TRUE, verbose=FALSE, seed) {
-    # check if we have whitened data
-    # here p is how many PCA loadings we use to do ICA on
-    # n.comp is how many ICA loadings we want outputted
-    if (missing(xw)) {
-        xw <- jvcoords::whiten(x, compute.scores=TRUE)
-    } else {
-        # rescale xw so works with p
-        if (!missing(whiten.p)) {
-            p <- whiten.p
-            if (!(floor(p) == p)) stop("p must be integer valued")
-            if (p > xw$q) stop("p too large for xw")
-            xw$loadings <- xw$loadings[,1:p]
-            xw$q <- p
-            xw$post.mul <- xw$post.mul[1:p]
-            xw$y <- xw$y[,1:p]
-        }
-    }
-    z <- xw$y
+#/*}}}*/
 
-    n <- nrow(z)
-    if(missing(whiten.p)) {
-        p <- ncol(z)
+clusterICA <- function(x, m=-1, p.ica, p.whiten, rand.iter,
+                       kmean.tol=0.1, opt.maxit=5000, opt.method="BFGS",
+                       compute.scores = TRUE, verbose=FALSE) {
+        # check if we have whitened data
+        # here p is how many PCA loadings we use to do ICA on
+        # p.ica is how many ICA loadings we want outputted
+        whitened <- FALSE
+        if(class(x) == "coords") {
+                xw <- x
+                z <- x$y
+                zCov <- cov(z)
+                zCovZero <- zCov - diag(nrow(zCov))
+                covDelta <- 1e-13
+                zCovZeroVector <- as.vector(zCovZero)
+                if (all(abs(zCovZeroVector) < covDelta)) {
+                        whitened <- TRUE
+                }
+        }
+        if(whitened == FALSE && class(x) == "coords") {
+                if(verbose == TRUE) {
+                        cat("Data 'x' of type 'coords' but not whitened: 
+                            whitening using jvcoords")
+                }
+                xw <- jvcoords::whiten(x$y, compute.scores=TRUE)
+                z <- xw$y
         } else {
-            p <- whiten.p
-            z <- z[,1:p]
+                if(verbose == TRUE) {
+                        cat("Data 'x' not whitened: whitening using jvcoords")
+                }
+                if(!(class(x) == "coords")) {
+                        xw <- jvcoords::whiten(x, compute.scores=TRUE)
+                        z <- xw$y
+                }
         }
-    if(missing(n.comp)) n.comp <- p
-    if(missing(m)) m <- floor(sqrt(n))
-    if(missing(rand.iter)) rand.iter <- max(5000, min(35000, 2^(p / 4.5)))
-    rand.out <- min(100+p, rand.iter)
-
-    # some error checking
-    if(n.comp > (p)) {
-        warning("n.comp = ", n.comp, " must be less than p + 1 = ",
-                (p+1), ". Set n.comp = p.")
-        n.comp <- p
-    }
-
-    # initiate loadings list
-    loadings <- vector(mode = "list", length = n.comp)
-    entr <- numeric()
-    IC <- diag(p)
-    loopNum <- n.comp
-    if (loopNum == p) loopNum <- p - 1
-    k <- 1
-    while (k <= loopNum) {
-    #for(k in 1:loopNum) {
-        if (verbose == TRUE) {
-            cat("optimising direction", k, "out of", n.comp, "\n")
+        n <- nrow(z)
+        if(missing(p.whiten)) {
+                p <- ncol(z)
+        } else {
+                p <- p.whiten
+                z <- z[,1:p]
         }
-        r <- p - k + 1 # the dimension of the search space
+        if(missing(p.ica)) p.ica <- p
+        stopifnot(p.ica <= p)
+        if(m == -1) m <- floor(sqrt(n))
+        if(missing(rand.iter)) rand.iter <- max(5000, min(35000, 2^(p / 4.5)))
+        rand.out <- min(100+p, rand.iter)
+        # initiate loadings list
+        loadings <- vector(mode = "list", length = p.ica)
+        entr <- numeric()
+        IC <- diag(p)
+        loopNum <- p.ica
+        if (loopNum == p) loopNum <- p - 1
+        k <- 1
+        while (k <= loopNum) {
+                if (verbose == TRUE) {
+                        cat("optimising direction", k, "out of", p.ica, "\n")
+                }
+                r <- p - k + 1 # the dimension of the search space
 
-        if (verbose == TRUE) {
-            cat("// Finding random starting points", "\n")
-        }
-        randDir <- randDirs(z=z, IC=IC, k=k, m=m, iter=rand.iter, out=rand.out,
-                            seed=seed)
-        if (verbose == TRUE) {
-            cat("/// Found ", length(randDir$entr), " starting directions", "\n",
-                sep="")
+                if (verbose == TRUE) {
+                        cat("// Finding random starting points", "\n")
+                }
+                randDir <- randDirs(z=z, IC=IC, k=k, m=m, iter=rand.iter, out=rand.out)
+                if (verbose == TRUE) {
+                        cat("/// Found ", length(randDir$entr), " starting directions", "\n",
+                            sep="")
+                        cat("/// Sorting these into clusters \n")
+                }
+                bestDirs <- clusterNorm(z = z, IC=IC, k=k, m=m,
+                                        dirs=randDir, kmean.tol=kmean.tol,
+                                        kmean.iter=200)
+                if (verbose == TRUE) {
+                        cat("//// Sorted into ", length(bestDirs), " clusters", "\n", sep="")
+                }
+                if (verbose == TRUE) {
+                        entrPreOptim <- unlist(sapply(bestDirs, function(x) x$entr))
+                        cat("//// Best pre-optim entropy = ", min(entrPreOptim), "\n", sep="")
+                }
+
+                # step 2: use local optimisation to find the best solution in the
+                # each cluster
+                if (verbose == TRUE) {
+                        cat("//// Optimising ", length(bestDirs), " clusters", "\n", sep="")
+                }
+                icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
+                                          best.dirs=bestDirs, maxit = opt.maxit,
+                                          opt.method=opt.method,
+                                          verbose=verbose)
+                if (verbose == TRUE) {
+                        cat("//// Optimised direction has entropy ",
+                            icaLoading$dirEntr, "\n", sep="")
+                }
+                bestEntr <- icaLoading$dirEntr
+                bestDir <- icaLoading$dirOptim
+
+                # is this projection better than any previous projections?
+                if(any(bestEntr < entr)) {
+                        k_tmp <- min(which(bestEntr < entr))
+                        lenBestDir <- length(bestDir)
+                        r_tmp <- (p - k_tmp + 1)
+                        bestDir <- c(rep(0, times=(r_tmp-lenBestDir)), bestDir)
+                        trialsOrigSpace <- bestDir %*% t(IC[,k_tmp:p])
+                        # switch to columns for each trial so that entr works
+                        trialsProj <- trialsOrigSpace %*% t(z[,1:p])
+                        newEntr <- mSpacingEntropy(trialsProj, m=m)
+                        k <- k_tmp
+                        r <- p - k + 1 # the dimension of the search space
+                        dirTmp <- vector("list", length=1)
+                        dirTmp[[1]]$dirs <- bestDir
+                        dirTmp[[1]]$entr <- newEntr
+                        icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
+                                                  best.dirs=dirTmp, maxit = opt.maxit,
+                                                  opt.method=opt.method, verbose=verbose)
+                        bestDir <- icaLoading$dirOptim
+                        bestEntr <- icaLoading$dirEntr
+                        entr <- entr[1:k_tmp]
+                        if (verbose == TRUE) {
+                                cat("///// Current projection better than ", k, "th projection", "\n")
+                                cat("///// Replacing ", k, "th projection", "\n")
+                        }
+                }
+
+                if (verbose == TRUE) cat("///// Householder reflection", "\n")
+                entr[k] <- bestEntr
+                # Use a Householder reflection which maps e1 to best.dir to update IC.
+                IC <- householderTransform(IC=IC, bestDir=bestDir, r=r, k=k, p=p)
+                k <- k + 1
         }
 
-        if (verbose == TRUE) {
-            cat("/// Sorting these into clusters \n")
-        }
-        # do we want to save all directions in each cluster,
-        # or just the best (pre-optim)
-        best.dirs <- clusterNorm(z = z, IC=IC, k=k, m=m,
-                                 dirs=randDir, kmean.tol=kmean.tol,
-                                 kmean.iter=200)
-        if (verbose == TRUE) {
-            cat("//// Sorted into ", length(best.dirs), " clusters", "\n", sep="")
-        }
-        entrPreOptim <- unlist(sapply(best.dirs, function(x) x$entr))
-        if (verbose == TRUE) {
-            cat("//// Best pre-optim entropy = ", min(entrPreOptim), "\n", sep="")
+        if (p.ica == p) {
+                bestDir <- 1
+                wOrigSpace <- IC %*% c(rep(0, p-1), bestDir)
+                zProj <- t(z %*% wOrigSpace)
+                bestEntr <- mSpacingEntropy(zProj, m = m)
+                entr[p] <- bestEntr
         }
 
-        # step 2: use local optimisation to find the best solution in the
-        # each cluster
-        if (verbose == TRUE) {
-            cat("//// Optimising ", length(best.dirs), " clusters", "\n", sep="")
+        IC <- IC[, seq_len(p.ica), drop=FALSE]
+
+        colnames(IC) <- paste0('wIC', seq_len(p.ica))
+        # want unmixing matrix for unwhitened data x
+        # x with column means removed
+        if(class(x) == "coords") {
+                X <- jvcoords::fromCoords(xw, xw$y)
+                Xt <- t(X) - xw$shift
+        } else {
+                Xt <- t(x) - xw$shift
         }
-        icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
-                                  best.dirs=best.dirs, maxit = opt.maxit,
-                                  opt.method=opt.method,
-                                  verbose=verbose)
-        if (verbose == TRUE) {
-            cat("//// Optimised direction has entropy ",
-                icaLoading$dirEntr, "\n", sep="")
+        rownames(Xt) <- paste0('Xcentred', seq_len(nrow(Xt)))
+        # make into class "coords"
+        xw <- jvcoords::appendTrfm(xw, op = "orth", IC)
+        # W s.t. S = X %*% t(W)
+        # here, X has each column mean subtracted
+        W <- t(IC) %*% diag(xw$cmds[[2]][[2]]) %*% t(xw$cmds[[1]][[2]])
+        rownames(W) <- paste0('IC', seq_len(nrow(W)))
+        colnames(W) <- NULL 
+        # R s.t. S = Y %*% R
+        R <- IC
+        xw$y <- z
+        xw$x <- t(Xt)
+        xw$w <- W
+        xw$r <- R
+        if(compute.scores == TRUE) {
+                S <- z %*% IC
+                colnames(S) <- paste0('S', seq_len(ncol(S)))
+                xw$s <- S
         }
-        bestEntr <- icaLoading$dirEntr
-        bestDir <- icaLoading$dirOptim
-
-        # is this projection better than any previous projections?
-        if(any(bestEntr < entr)) {
-            k_tmp <- min(which(bestEntr < entr))
-            lenBestDir <- length(bestDir)
-            r_tmp <- (p - k_tmp + 1)
-            #cat("k = ", k, ", k_tmp = ", k_tmp, ", r_tmp = ", r_tmp, ", lenBestDir = ", lenBestDir, "\n")
-            bestDir <- c(rep(0, times=(r_tmp-lenBestDir)), bestDir)
-            trialsOrigSpace <- bestDir %*% t(IC[,k_tmp:p])
-            # switch to columns for each trial so that entr works
-            trialsProj <- trialsOrigSpace %*% t(z[,1:p])
-            newEntr <- mSpacingEntropy(trialsProj, m=m)
-            k <- k_tmp
-            r <- p - k + 1 # the dimension of the search space
-            dirTmp <- vector("list", length=1)
-            dirTmp[[1]]$dirs <- bestDir
-            dirTmp[[1]]$entr <- newEntr
-            icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
-                                  best.dirs=dirTmp, maxit = opt.maxit,
-                                  opt.method=opt.method, verbose=verbose)
-            bestDir <- icaLoading$dirOptim
-            bestEntr <- icaLoading$dirEntr
-            entr <- entr[1:k_tmp]
-            if (verbose == TRUE) {
-                cat("///// Current projection better than ", k, "th projection", "\n")
-                cat("///// Replacing ", k, "th projection", "\n")
-            }
-        }
-
-        if (verbose == TRUE) {
-            cat("///// Householder reflection", "\n")
-        }
-        entr[k] <- bestEntr
-        # Use a Householder reflection which maps e1 to best.dir to update IC.
-        e1 <- c(1, rep(0, r-1))
-        # from wiki: take sign of x_k s.t.
-        # k is the last col entry of non-zero in UT form A = QR
-        signTmp <- sign(bestDir[1])
-        v <- bestDir - signTmp * e1
-        v <- v / sqrt(sum(v^2))
-        P <- diag(r) - 2 * tcrossprod(v)
-        IC[,k:p] <- IC[,k:p,drop=FALSE] %*% P
-        k <- k + 1
-    }
-
-    if (n.comp == p) {
-        bestDir <- 1
-        wOrigSpace <- IC %*% c(rep(0, p-1), bestDir)
-        zProj <- t(z %*% wOrigSpace)
-        bestEntr <- mSpacingEntropy(zProj, m = m)
-        entr[p] <- bestEntr
-    }
-
-    IC <- IC[, seq_len(n.comp), drop=FALSE]
-
-    colnames(IC) <- paste0('IC', seq_len(n.comp))
-    #rownames(IC) <- rownames(xw$loadings)
-
-    res <- list()
-    res$xw <- xw
-    res$IC <- IC
-    if(compute.scores == TRUE) {
-        y <- z %*% IC
-        res$y <- y
-    }
-    res$entropy <- entr
-    class(res) = "clusterICA"
-    res
+        xw$entropy <- entr
+        class(xw) = c("clusterICA", "coords")
+        xw
 }
+

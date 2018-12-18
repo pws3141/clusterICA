@@ -4,20 +4,18 @@
 \alias{clusterICA}
 \title{Independent Component Analysis (ICA)}
 \usage{
-clusterICA(x, xw, m, n.comp, whiten.p, rand.iter, kmean.tol = 0.1,
-  opt.maxit = 5000, opt.method = "Nelder-Mead",
-  compute.scores = TRUE, verbose = FALSE, seed)
+clusterICA(x, m = -1, p.ica, p.whiten, rand.iter, kmean.tol = 0.1,
+  opt.maxit = 5000, opt.method = "BFGS", compute.scores = TRUE,
+  verbose = FALSE)
 }
 \arguments{
 \item{x}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
 
-\item{xw}{(optional) the whitened version of x}
-
 \item{m}{(optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)}
 
-\item{n.comp}{the number of ICA loadings outputted}
+\item{p.ica}{the number of ICA loadings outputted}
 
-\item{whiten.p}{(optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step}
+\item{p.whiten}{(optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step}
 
 \item{rand.iter}{the number of random directions to initialise}
 
@@ -30,8 +28,6 @@ clusterICA(x, xw, m, n.comp, whiten.p, rand.iter, kmean.tol = 0.1,
 \item{compute.scores}{if TRUE then scores of the whitened data are outputted}
 
 \item{verbose}{if TRUE then information is given on the status of the function}
-
-\item{seed}{(optional) the set.seed number used for initialising the random directions}
 }
 \value{
 A list with the following components:
@@ -64,11 +60,11 @@ x2[,2] <- scale(x2[,2])
 good2 <- cos(20 * x2 \%*\% a1) >= 0
 x2Good <- x2[which(good2),]
 xGood <- rbind(x1Good, x2Good)
-a <- clusterICA(x=xGood, n.comp=1, rand.iter=1000, seed=5)
+a <- clusterICA(x=xGood, p.ica=1, rand.iter=1000)
 par(mfrow = c(1,3))
 plot(xGood, main = "Pre-processed data")
-plot(a$xw$y, main = "Whitened data")
-plot(density(a$y, bw="sj"), main = "ICA components")
+plot(a$y, main = "Whitened data")
+plot(density(a$s, bw="sj"), main = "ICA components")
 
 #---------------------------------------------------
 #Example 2: un-mixing two mixed independent uniforms
@@ -77,18 +73,18 @@ plot(density(a$y, bw="sj"), main = "ICA components")
 S <- matrix(runif(10000), 5000, 2)
 A <- matrix(c(1, 1, -1, 3), 2, 2, byrow = TRUE)
 X <- S \%*\% A
-a <- clusterICA(X, whiten.p=2, rand.iter=1000)
+a <- clusterICA(X, p.whiten=2, rand.iter=1000)
 par(mfrow = c(1, 3))
 plot(X, main = "Pre-processed data")
-plot(a$xw$y, main = "Whitened data")
-plot(a$y, main = "ICA components")
+plot(a$y, main = "Whitened data")
+plot(a$s, main = "ICA components")
 
 #---------------------------------------------------
 #Example 3: un-mixing iris data
 #---------------------------------------------------
 a <- clusterICA(iris[,1:4])
-plot(a$y, main = "ICA components")
-pairs(a$y, col=iris$Species)
+plot(a$s, main = "ICA components")
+pairs(a$s, col=iris$Species)
 }
 \author{
 Paul Smith, \email{mmpws@leeds.ac.uk}
