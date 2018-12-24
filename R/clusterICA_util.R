@@ -1,12 +1,42 @@
+# fastICA initialisation
+# find a w using the fastICA objective function
+# use this alongside random directions
+fastICAInitialisation <- function(z, IC, m, k, norm.sampl) {
+        n <- nrow(z)
+        nNorm <- length(norm.sampl)
+        p <- ncol(z)
+        r <- p - k + 1 # the dimension of the search space
+        # start with random direction
+        w <- rnorm(r)
+        w <- w / sqrt(sum(w^2))
+        # optim
+        opt <- optim(w, function(w) {
+                        w <- w / sqrt(sum(w^2))
+                        wProj <- IC %*% c(rep(0, k-1), w)
+                        xOrigSpace <- z %*% wProj
+                        TermOne <- (1 / n) * sum(log(cosh(xOrigSpace)))
+                        TermTwo <- (1 / nNorm) * sum(log(cosh(norm.sampl)))
+                        output <- (TermOne - TermTwo)^2
+                        -output
+                        }, 
+                        method = "BFGS", control = list(maxit = 2000, trace=0))
+        trial <- opt$par
+        trial <- trial / sqrt(sum(trial^2))
+        wProj <- IC %*% c(rep(0, k-1), trial)
+        xOrigSpace <- z %*% wProj
+        # switch to columns for each trial so that entr works
+        entr <- mSpacingEntropy(t(xOrigSpace), m=m)
+        res <- list(dir = trial, entr = entr)
+        res
+}
+
 # produce random directions, and choose the 'out' best directions
 # best directions are those that minimise entropy
 # The value associated with the less ``important'' whitening loadings
 # have more probability of being zero
 randDirs <- function(z, IC, k, m, iter=5000, out) {
     p <- ncol(IC)
-
     r <- p - k + 1 # the dimension of the search space
-
     trialsMat <- matrix(rnorm(r*iter), iter, r)
     # lets try with some elements zero
     # seemed to work well when tried a while back
@@ -58,14 +88,11 @@ randDirs <- function(z, IC, k, m, iter=5000, out) {
 clusterNorm <- function(z, IC, k, m, dirs, kmean.tol=0.1,
                         kmean.iter, save.all=FALSE, clust.avg=FALSE) {
     p <- ncol(IC)
-
     entr <- dirs$entr
     dirs <- dirs$dirs
-
     # K-Means Cluster Analysis: Divisive
     c <- clusterProjDivisive(X=dirs, tol=kmean.tol, iter.max=kmean.iter)
     clusters <- max(c$c)
-
     # append cluster assignment & put into list
     outTmp <- vector(mode = "list", length = clusters)
     dirsClusterAppend <- cbind(c$c, entr, dirs)

@@ -12,6 +12,8 @@
 #' @param kmean.tol the tolerance used in divisive clustering, see clusterProjDivisive
 #' @param opt.maxit the maximum number of iterations used in the optimisation step, see optim
 #' @param opt.method the method used in the optimisation step, see optim
+#' @param fast.init if TRUE then the objective function used in the fastICA method
+#' is optimised to find an extra direction to cluster 
 #' @param compute.scores if TRUE then scores of the whitened data are outputted
 #' @param verbose if TRUE then information is given on the status of the function
 #' @return A list with the following components:
@@ -74,8 +76,8 @@
 #/*}}}*/
 
 clusterICA <- function(x, m=-1, p.ica, p.whiten, rand.iter,
-                       kmean.tol=0.1, opt.maxit=5000, opt.method="BFGS",
-                       compute.scores = TRUE, verbose=FALSE) {
+                        kmean.tol=0.1, opt.maxit=5000, opt.method="BFGS",
+                        fast.init=TRUE, compute.scores = TRUE, verbose=FALSE) {
         # check if we have whitened data
         # here p is how many PCA loadings we use to do ICA on
         # p.ica is how many ICA loadings we want outputted
@@ -119,23 +121,30 @@ clusterICA <- function(x, m=-1, p.ica, p.whiten, rand.iter,
         if(m == -1) m <- floor(sqrt(n))
         if(missing(rand.iter)) rand.iter <- max(5000, min(35000, 2^(p / 4.5)))
         rand.out <- min(100+p, rand.iter)
+        # if fastICA obj function used for initialisation
+        if (fast.init == TRUE) normSamp <- rnorm(1e5)
         # initiate loadings list
         loadings <- vector(mode = "list", length = p.ica)
         entr <- numeric()
         IC <- diag(p)
         loopNum <- p.ica
         if (loopNum == p) loopNum <- p - 1
+
         k <- 1
         while (k <= loopNum) {
                 if (verbose == TRUE) {
                         cat("optimising direction", k, "out of", p.ica, "\n")
                 }
                 r <- p - k + 1 # the dimension of the search space
-
                 if (verbose == TRUE) {
                         cat("// Finding random starting points", "\n")
                 }
                 randDir <- randDirs(z=z, IC=IC, k=k, m=m, iter=rand.iter, out=rand.out)
+                if (fast.init == TRUE) {
+                        fastDir <- fastICAInitialisation(z=z, IC=IC, m=m, k=k, norm.sampl=normSamp)
+                        randDir$dirs <- rbind(randDir$dirs, fastDir$dir)
+                        randDir$entr <- c(randDir$entr, fastDir$entr)
+                }
                 if (verbose == TRUE) {
                         cat("/// Found ", length(randDir$entr), " starting directions", "\n",
                             sep="")

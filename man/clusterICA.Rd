@@ -5,8 +5,8 @@
 \title{Independent Component Analysis (ICA)}
 \usage{
 clusterICA(x, m = -1, p.ica, p.whiten, rand.iter, kmean.tol = 0.1,
-  opt.maxit = 5000, opt.method = "BFGS", compute.scores = TRUE,
-  verbose = FALSE)
+  opt.maxit = 5000, opt.method = "BFGS", fast.init = TRUE,
+  compute.scores = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{x}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
@@ -24,6 +24,9 @@ clusterICA(x, m = -1, p.ica, p.whiten, rand.iter, kmean.tol = 0.1,
 \item{opt.maxit}{the maximum number of iterations used in the optimisation step, see optim}
 
 \item{opt.method}{the method used in the optimisation step, see optim}
+
+\item{fast.init}{if TRUE then the objective function used in the fastICA method
+is optimised to find an extra direction to cluster}
 
 \item{compute.scores}{if TRUE then scores of the whitened data are outputted}
 
