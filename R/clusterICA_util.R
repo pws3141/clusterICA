@@ -19,7 +19,7 @@ fastICAInitialisation <- function(z, IC, m, k, norm.sampl) {
                         output <- (TermOne - TermTwo)^2
                         -output
                         }, 
-                        method = "BFGS", control = list(maxit = 2000, trace=0))
+                        method = "BFGS", control = list(maxit = 100, trace=0))
         trial <- opt$par
         trial <- trial / sqrt(sum(trial^2))
         wProj <- IC %*% c(rep(0, k-1), trial)

@@ -67,7 +67,8 @@ for (i in 1:length(X)) {
     }
 }
 
-
+# comment out these tests
+if (FALSE) {
 # check: entropy tends towards true when n,m -> \Inf with m/n -> 0
 # use m <- sqrt(n)
 entrm <- numeric()
@@ -148,4 +149,7 @@ for (i in 1:3) {
         #if (j/100 == floor(j/100)) cat(j)
     }
     plot(x = 2:(length(Xxx) - 3), y = Xm, type = "b")
+}
+
+# end of comment block
 }
