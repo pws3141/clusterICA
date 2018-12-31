@@ -46,8 +46,10 @@ clusterProjPlusPlus <- function(X, K) {
             # need to change this so that the clust mean changes...
             # don't want empty clustering
             if(!(nrow(Y) == 0)) {
-                s <- La.svd(Y, nu=0, nv=1)
-                centre <- s$vt[1,]
+                #s <- La.svd(Y, nu=0, nv=1)
+                s <- svd(Y, nu=0, nv=1)
+                #centre <- s$vt[1,]
+                centre <- s$v[,1]
                 dist[, k] <- 1 - (X %*% centre)^2
             }
 
@@ -135,7 +137,8 @@ clusterProjWss <- function(X, c) {
         if(nTmp == 0) {
             SEE <- 0
         } else {
-            s <- La.svd(x, nu=0, nv=1)
+            #s <- La.svd(x, nu=0, nv=1)
+            s <- svd(x, nu=0, nv=1)
             SSE <- nTmp - s$d[1]^2
         }
     }))
