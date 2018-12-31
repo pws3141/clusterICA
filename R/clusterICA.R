@@ -87,26 +87,28 @@ clusterICA <- function(x, m=-1, p.ica, p.whiten, rand.iter,
                 z <- x$y
                 zCov <- cov(z)
                 zCovZero <- zCov - diag(nrow(zCov))
-                covDelta <- 1e-13
+                covDelta <- 1e-10
                 zCovZeroVector <- as.vector(zCovZero)
                 if (all(abs(zCovZeroVector) < covDelta)) {
                         whitened <- TRUE
                 }
         }
-        if(whitened == FALSE && class(x) == "coords") {
-                if(verbose == TRUE) {
-                        cat("Data 'x' of type 'coords' but not whitened: 
-                            whitening using jvcoords")
-                }
-                xw <- jvcoords::whiten(x$y, compute.scores=TRUE)
-                z <- xw$y
-        } else {
-                if(verbose == TRUE) {
-                        cat("Data 'x' not whitened: whitening using jvcoords")
-                }
-                if(!(class(x) == "coords")) {
-                        xw <- jvcoords::whiten(x, compute.scores=TRUE)
+        if(whitened == FALSE) { 
+                if(class(x) == "coords") {
+                        if(verbose == TRUE) {
+                                cat("Data 'x' of type 'coords' but not whitened: 
+                                    whitening using jvcoords")
+                        }
+                        xw <- jvcoords::whiten(x$y, compute.scores=TRUE)
                         z <- xw$y
+                } else {
+                        if(verbose == TRUE) {
+                                cat("Data 'x' not whitened: whitening using jvcoords")
+                        }
+                        if(!(class(x) == "coords")) {
+                                xw <- jvcoords::whiten(x, compute.scores=TRUE)
+                                z <- xw$y
+                        }
                 }
         }
         n <- nrow(z)
@@ -235,7 +237,8 @@ clusterICA <- function(x, m=-1, p.ica, p.whiten, rand.iter,
         xw <- jvcoords::appendTrfm(xw, op = "orth", IC)
         # W s.t. S = X %*% t(W)
         # here, X has each column mean subtracted
-        W <- t(IC) %*% diag(xw$cmds[[2]][[2]]) %*% t(xw$cmds[[1]][[2]])
+        W <- t(IC) %*% diag(xw$cmds[[2]][[2]][1:p]) %*%
+                t(xw$cmds[[1]][[2]][,1:p,drop=FALSE])
         rownames(W) <- paste0('IC', seq_len(nrow(W)))
         colnames(W) <- NULL 
         # R s.t. S = Y %*% R
