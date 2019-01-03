@@ -6,7 +6,6 @@
 # Now that the initial centers have been chosen, proceed using standard k-means clustering.
 clusterProjPlusPlus <- function(X, K) {
     n <- nrow(X)
-
     DX <- rep(1/n, n)
     dist <- matrix(0, nrow=n, ncol=K)
     for (k in 1:K) {
@@ -16,6 +15,13 @@ clusterProjPlusPlus <- function(X, K) {
         # overwrite to stop numerical errors so that DX is always positive
         dist[sampleTmp, k] <- 0
         DX <- apply(dist[,1:k,drop=FALSE], 1, min)
+        # use log() to stop "too few positive probabilities" error
+        # as sample() only requires relative probabilites
+        DXlog <- log(DX)
+        # make max DXlog equal 0
+        DXlog <- DXlog - max(DXlog)
+        # exp(log) to set max to 1
+        DX <- exp(DXlog)
     }
     apply(dist, 1, which.min)
 }
