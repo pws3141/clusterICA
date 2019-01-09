@@ -202,7 +202,7 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
 # input is from clusterNorm
 icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
                         opt.method="BFGS",
-                        clust.avg=FALSE, verbose=FALSE) {
+                        verbose=FALSE) {
     n <- nrow(z)
     p <- ncol(IC)
 
@@ -222,36 +222,9 @@ icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
         dirTmp <- best.dirs[[i]]
         nTmp <- length(dirTmp$entr)
         nn[i] <- nTmp
-        if(nTmp == 1) {
             dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirTmp$dirs,
                                   k = k, m = m, maxit = maxit,
                                   cluster=i, opt.method=opt.method)
-        } else {
-        # TODO: remove?
-            samp <- seq_len(nTmp)
-            dirOpt_clust <- lapply(samp, function(j) {
-                dirr <- dirTmp$dirs[j,]
-                dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirr,
-                                      k = k, m = m, maxit = maxit, cluster=i,
-                                      opt.method=opt.method)
-            })
-            dirEntrTmp <- sapply(dirOpt_clust, function(x) x$entr)
-            dirDirTmp <- t(sapply(dirOpt_clust, function(x) x$dir))
-            names_tmp <- names(dirTmp$entr)
-            dirTable <- cbind(dirEntrTmp, dirDirTmp)
-            ord_tmp <- order(dirTable[,1])
-            dirTable <- dirTable[ord_tmp,]
-            names_tmp <- names_tmp[ord_tmp]
-            dirEntrTmp <- dirTable[,1]
-            names(dirEntrTmp) <- names_tmp
-            dirDirTmp <- dirTable[,-1]
-            entrMin <- which.min(dirEntrTmp)
-
-            dirOptTmp <- list(entr=dirEntrTmp[entrMin],
-                              dirs=dirDirTmp[entrMin,])
-            dirOptMany[[i]] <- list(entr=dirEntrTmp, dirs=dirDirTmp)
-        }
-
         dirOpt[i,] <- c(dirOptTmp$entr, dirOptTmp$dirs)
     }
     clusterNum <- which.min(dirOpt[,1])
@@ -259,11 +232,7 @@ icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
     output$clusterNum <- clusterNum
     output$dirEntr <- dirOpt[clusterNum, 1]
     output$dirOptim <- dirOpt[clusterNum, -1]
-    if (any(nn > 1)) {
-        return(list(best=output, all=dirOptMany))
-    } else {
-        return(output)
-    }
+    return(output)
 }
 
 householderTransform <- function(IC, bestDir, r, k, p) {
