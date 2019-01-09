@@ -86,7 +86,7 @@ randDirs <- function(z, IC, k, m, iter=5000, out) {
 # put random directions into clusters
 # uses divisive kmeans clustering from clusterProjDivisive
 clusterNorm <- function(z, IC, k, m, dirs, kmean.tol=0.1,
-                        kmean.iter, save.all=FALSE, clust.avg=FALSE) {
+                        kmean.iter) {
     p <- ncol(IC)
     entr <- dirs$entr
     dirs <- dirs$dirs
@@ -98,28 +98,12 @@ clusterNorm <- function(z, IC, k, m, dirs, kmean.tol=0.1,
     dirsClusterAppend <- cbind(c$c, entr, dirs)
     for(i in 1:clusters) {
         whichCluster <- which(dirsClusterAppend[,1] == i)
-        if (save.all == FALSE & clust.avg==FALSE) {
             outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]
             entrMin <- which.min(outTmp[[i]]$entr)
             outTmp[[i]]$entr <- outTmp[[i]]$entr[entrMin]
             outTmp[[i]]$dirs <- dirsClusterAppend[whichCluster, c(-1, -2),
                                                   drop=FALSE]
             outTmp[[i]]$dirs <- outTmp[[i]]$dirs[entrMin,]
-        } else {
-            outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]
-            outTmp[[i]]$dirs <- dirsClusterAppend[whichCluster, c(-1, -2)]
-            #TODO: Remove clust.avg?
-            if (clust.avg == TRUE) {
-                s <- La.svd(outTmp[[i]]$dirs, nu=0, nv=1)
-                centre <- s$vt[1,]
-                outTmp[[i]]$dirs <- centre
-                # calc entropy of centre
-                centreOrigSpace <- centre %*% t(IC[,k:p])
-                centreProj <- centreOrigSpace %*% t(z)
-                entr <- mSpacingEntropy(centreProj, m=m)
-                outTmp[[i]]$entr <- entr
-            }
-        }
     }
     outTmp
     return(outTmp)
