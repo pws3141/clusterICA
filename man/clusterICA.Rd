@@ -4,20 +4,20 @@
 \alias{clusterICA}
 \title{Independent Component Analysis (ICA)}
 \usage{
-clusterICA(x, m = -1, p.ica, p.whiten, rand.iter, kmean.tol = 0.1,
-  opt.maxit = 5000, opt.method = "BFGS", fast.init = TRUE,
-  compute.scores = TRUE, verbose = FALSE)
+clusterICA(x, p.ica = -1, p.whiten = -1, rand.iter = -1, m = -1,
+  kmean.tol = 0.1, opt.maxit = 5000, opt.method = "BFGS",
+  fast.init = TRUE, compute.scores = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{x}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
-
-\item{m}{(optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)}
 
 \item{p.ica}{the number of ICA loadings outputted}
 
 \item{p.whiten}{(optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step}
 
 \item{rand.iter}{the number of random directions to initialise}
+
+\item{m}{(optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)}
 
 \item{kmean.tol}{the tolerance used in divisive clustering, see clusterProjDivisive}
 

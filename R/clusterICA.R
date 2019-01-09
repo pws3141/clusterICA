@@ -5,10 +5,10 @@
 #'  using the m-spacing entropy estimation as the objective function to minimise.
 #'
 #' @param x the data to perform ICA on, ncol(x) = n, nrow(x) = p
-#' @param m (optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)
 #' @param p.ica the number of ICA loadings outputted
 #' @param p.whiten (optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step
 #' @param rand.iter the number of random directions to initialise
+#' @param m (optional) the value of m-spacing for calculating approximate entropy, if missing(m), m <- sqrt(n)
 #' @param kmean.tol the tolerance used in divisive clustering, see clusterProjDivisive
 #' @param opt.maxit the maximum number of iterations used in the optimisation step, see optim
 #' @param opt.method the method used in the optimisation step, see optim
@@ -75,7 +75,7 @@
 #' @export
 #/*}}}*/
 
-clusterICA <- function(x, m=-1, p.ica, p.whiten, rand.iter,
+clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1, 
                         kmean.tol=0.1, opt.maxit=5000, opt.method="BFGS",
                         fast.init=TRUE, compute.scores = TRUE, verbose=FALSE) {
         # check if we have whitened data
@@ -112,16 +112,16 @@ clusterICA <- function(x, m=-1, p.ica, p.whiten, rand.iter,
                 }
         }
         n <- nrow(z)
-        if(missing(p.whiten)) {
+        if(p.whiten == -1) {
                 p <- ncol(z)
         } else {
                 p <- p.whiten
                 z <- z[,1:p]
         }
-        if(missing(p.ica)) p.ica <- p
+        if(p.ica == -1) p.ica <- p
         stopifnot(p.ica <= p)
         if(m == -1) m <- floor(sqrt(n))
-        if(missing(rand.iter)) rand.iter <- max(5000, min(35000, 2^(p / 4.5)))
+        if(rand.iter == -1) rand.iter <- max(5000, min(35000, 2^(p / 4.5)))
         rand.out <- min(100+p, rand.iter)
         # if fastICA obj function used for initialisation
         if (fast.init == TRUE) normSamp <- rnorm(1e5)
