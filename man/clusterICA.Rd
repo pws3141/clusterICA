@@ -32,15 +32,6 @@ is optimised to find an extra direction to cluster}
 
 \item{verbose}{if TRUE then information is given on the status of the function}
 }
-\value{
-A list with the following components:
-        \itemize{
-             \item{xw} {The output from jvcoords::whiten(x)}
-             \item{IC} {The matrix of the loading vectors for the whitened data}
-             \item{y} {The matrix of the projections of the whitened data along the loading vectors}
-             \item{entr} {The m-spacing entropy of each row of y}
-         }
-}
 \description{
 Uses random directions, clustering and optimisation to obtain ICA loadings,
  using the m-spacing entropy estimation as the objective function to minimise.
@@ -66,8 +57,8 @@ xGood <- rbind(x1Good, x2Good)
 a <- clusterICA(x=xGood, p.ica=1, rand.iter=1000)
 par(mfrow = c(1,3))
 plot(xGood, main = "Pre-processed data")
-plot(a$y, main = "Whitened data")
-plot(density(a$s, bw="sj"), main = "ICA components")
+plot(a$Y, main = "Whitened data")
+plot(density(a$S, bw="sj"), main = "ICA components")
 
 #---------------------------------------------------
 #Example 2: un-mixing two mixed independent uniforms
@@ -79,15 +70,15 @@ X <- S \%*\% A
 a <- clusterICA(X, p.whiten=2, rand.iter=1000)
 par(mfrow = c(1, 3))
 plot(X, main = "Pre-processed data")
-plot(a$y, main = "Whitened data")
-plot(a$s, main = "ICA components")
+plot(a$Y, main = "Whitened data")
+plot(a$S, main = "ICA components")
 
 #---------------------------------------------------
 #Example 3: un-mixing iris data
 #---------------------------------------------------
 a <- clusterICA(iris[,1:4])
-plot(a$s, main = "ICA components")
-pairs(a$s, col=iris$Species)
+plot(a$S, main = "ICA components")
+pairs(a$S, col=iris$Species)
 }
 \author{
 Paul Smith, \email{mmpws@leeds.ac.uk}

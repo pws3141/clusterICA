@@ -98,12 +98,12 @@ clusterNorm <- function(z, IC, k, m, dirs, kmean.tol=0.1,
     dirsClusterAppend <- cbind(c$c, entr, dirs)
     for(i in 1:clusters) {
         whichCluster <- which(dirsClusterAppend[,1] == i)
-            outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]
-            entrMin <- which.min(outTmp[[i]]$entr)
-            outTmp[[i]]$entr <- outTmp[[i]]$entr[entrMin]
-            outTmp[[i]]$dirs <- dirsClusterAppend[whichCluster, c(-1, -2),
-                                                  drop=FALSE]
-            outTmp[[i]]$dirs <- outTmp[[i]]$dirs[entrMin,]
+        outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]
+        entrMin <- which.min(outTmp[[i]]$entr)
+        outTmp[[i]]$entr <- outTmp[[i]]$entr[entrMin]
+        outTmp[[i]]$dirs <- dirsClusterAppend[whichCluster, c(-1, -2),
+                                          drop=FALSE]
+        outTmp[[i]]$dirs <- outTmp[[i]]$dirs[entrMin,]
     }
     outTmp
     return(outTmp)
@@ -201,8 +201,7 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
 # create a single ICA loading from clustered random projections
 # input is from clusterNorm
 icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
-                        opt.method="BFGS",
-                        verbose=FALSE) {
+                        opt.method="BFGS", verbose=FALSE) {
     n <- nrow(z)
     p <- ncol(IC)
 
@@ -214,18 +213,19 @@ icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
 
     dirOpt <- matrix(nrow = clusters, ncol = (p  - k + 1 + 1))
     dirOptMany <- vector(mode="list", length=clusters)
-    nn <- numeric()
     for(i in 1:clusters) {
         if (verbose == TRUE) {
             cat("//// Optimising cluster ", i, "\n")
         }
         dirTmp <- best.dirs[[i]]
         nTmp <- length(dirTmp$entr)
-        nn[i] <- nTmp
-            dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirTmp$dirs,
+cat("nTmp = ", nTmp, "\n")
+if (nTmp == 1) {
+        dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirTmp$dirs,
                                   k = k, m = m, maxit = maxit,
                                   cluster=i, opt.method=opt.method)
         dirOpt[i,] <- c(dirOptTmp$entr, dirOptTmp$dirs)
+}
     }
     clusterNum <- which.min(dirOpt[,1])
     output <- list()

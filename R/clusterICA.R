@@ -16,14 +16,17 @@
 #' is optimised to find an extra direction to cluster 
 #' @param compute.scores if TRUE then scores of the whitened data are outputted
 #' @param verbose if TRUE then information is given on the status of the function
-#' @return A list with the following components:
-#'         \itemize{
-#'              \item{xw} {The output from jvcoords::whiten(x)}
-#'              \item{IC} {The matrix of the loading vectors for the whitened data}
-#'              \item{y} {The matrix of the projections of the whitened data along the loading vectors}
-#'              \item{entr} {The m-spacing entropy of each row of y}
-#'          }
-#'
+#' @return 
+#' An object of class ‘coords’, with the following additional
+#' components added:
+#' \itemize{
+#' \item{X} {Centered data matrix}
+#' \item{Y} {Whitened data matrix, found using jvcoords::whiten(x)}
+#' \item{S} {Matrix of source signal estimates}
+#' \item{W} {Estimated unmixing matrix, S = X %*% t(W)}
+#' \item{R} {Orthogonal rotation matrix, S = Y %*% R}
+#' \item{entr} {The m-spacing entropy of each column of S}
+#' }
 #' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
 # #' @seealso clusterProjKmeans()
 #' @keywords independent component analysis, entropy, clustering
@@ -50,8 +53,8 @@
 #' a <- clusterICA(x=xGood, p.ica=1, rand.iter=1000)
 #' par(mfrow = c(1,3))
 #' plot(xGood, main = "Pre-processed data")
-#' plot(a$y, main = "Whitened data")
-#' plot(density(a$s, bw="sj"), main = "ICA components")
+#' plot(a$Y, main = "Whitened data")
+#' plot(density(a$S, bw="sj"), main = "ICA components")
 #'
 #' #---------------------------------------------------
 #' #Example 2: un-mixing two mixed independent uniforms
@@ -63,15 +66,15 @@
 #' a <- clusterICA(X, p.whiten=2, rand.iter=1000)
 #' par(mfrow = c(1, 3))
 #' plot(X, main = "Pre-processed data")
-#' plot(a$y, main = "Whitened data")
-#' plot(a$s, main = "ICA components")
+#' plot(a$Y, main = "Whitened data")
+#' plot(a$S, main = "ICA components")
 #'
 #' #---------------------------------------------------
 #' #Example 3: un-mixing iris data
 #' #---------------------------------------------------
 #' a <- clusterICA(iris[,1:4])
-#' plot(a$s, main = "ICA components")
-#' pairs(a$s, col=iris$Species)
+#' plot(a$S, main = "ICA components")
+#' pairs(a$S, col=iris$Species)
 #' @export
 #/*}}}*/
 
@@ -243,14 +246,14 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
         colnames(W) <- NULL 
         # R s.t. S = Y %*% R
         R <- IC
-        xw$y <- z
-        xw$x <- t(Xt)
-        xw$w <- W
-        xw$r <- R
+        xw$Y <- z
+        xw$X <- t(Xt)
+        xw$W <- W
+        xw$R <- R
         if(compute.scores == TRUE) {
                 S <- z %*% IC
                 colnames(S) <- paste0('S', seq_len(ncol(S)))
-                xw$s <- S
+                xw$S <- S
         }
         xw$entropy <- entr
         class(xw) = c("clusterICA", "coords")
