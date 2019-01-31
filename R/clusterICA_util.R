@@ -130,11 +130,15 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
                                      entropyGradOrigSpace <- optimEntropyDeriv(xProj=zProj, x=z, m=m)
                                      #TODO: is this correct?
                                      if(k > 1) {
-                                        # use chain rule to obtain w \in \R^r
+                                        # use chain rule to obtain \delta w \in \R^r
                                         r <- length(w)
-                                        zeroMatrix <- matrix(0, nrow = (k-1), ncol = r)
-                                        jacobianG <- z %*% IC %*% rbind(zeroMatrix, diag(r))
-                                        entropyGrad <- t(jacobianG) %*% entropyGradOrigSpace
+                                        zeroMatrixTop <- matrix(0, nrow = (k-1),
+                                                                ncol = r)
+                                        paddedI <- rbind(zeroMatrixTop, diag(r))
+                                        # with u = IC %*% (rep(0, k-1), w), want du/dw
+                                        dudw <- IC %*% paddedI
+                                        entropyGrad <- entropyGradOrigSpace %*% dudw
+                                        entropyGrad
                                      } else {
                                         entropyGradOrigSpace
                                      }
@@ -154,30 +158,19 @@ dirOptim <- function(z, IC, k, m, dirs, maxit=1000,
                                      wOrigSpace <- IC %*% c(rep(0, k-1), w)
                                      zProj <- t(z %*% wOrigSpace)
                                      entropyGradOrigSpace <- optimEntropyDeriv(xProj=zProj, x=z, m=m)
-                                     #TODO: is this correct?
                                      if(k > 1) {
                                         # use chain rule to obtain \delta w \in \R^r
                                         r <- length(w)
                                         zeroMatrixTop <- matrix(0, nrow = (k-1),
                                                                 ncol = r)
-                                                                #ncol = (r + k - 1))
-                                        #zeroMatrixLeft <- matrix(0, nrow = r, ncol = (k-1))
                                         paddedI <- rbind(zeroMatrixTop, diag(r))
-                                                        #cbind(zeroMatrixLeft, diag(r)))
-                                        #jacobianG <- z %*% IC %*% paddedI
                                         # with u = IC %*% (rep(0, k-1), w), want du/dw
                                         dudw <- IC %*% paddedI
-                                        #entropyGrad <- t(jacobianG) %*% entropyGradOrigSpace
                                         entropyGrad <- entropyGradOrigSpace %*% dudw
+                                        entropyGrad
                                      } else {
                                         entropyGradOrigSpace
                                      }
-                                     #entropyGrad <- optimEntropyDeriv(xProj=zProj, x=z, m=m)
-                                     #if(k > 1) {
-                                             #entropyGrad[-(1:(k-1))] 
-                                     #} else {
-                                             #entropyGrad
-                                     #}
                              },
                              method = opt.method, control = list(maxit = maxit, trace=0))
         }
@@ -219,13 +212,12 @@ icaClusters <- function(z, IC, k, m, best.dirs, maxit=1000,
         }
         dirTmp <- best.dirs[[i]]
         nTmp <- length(dirTmp$entr)
-cat("nTmp = ", nTmp, "\n")
-if (nTmp == 1) {
+        #if (nTmp == 1) {
         dirOptTmp <- dirOptim(z = z, IC = IC, dirs = dirTmp$dirs,
-                                  k = k, m = m, maxit = maxit,
-                                  cluster=i, opt.method=opt.method)
+                                k = k, m = m, maxit = maxit,
+                                cluster=i, opt.method=opt.method)
         dirOpt[i,] <- c(dirOptTmp$entr, dirOptTmp$dirs)
-}
+        #}
     }
     clusterNum <- which.min(dirOpt[,1])
     output <- list()

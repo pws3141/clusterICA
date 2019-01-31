@@ -26,6 +26,7 @@ clusterProjPlusPlus <- function(X, K) {
         DXlog <- DXlog - max(DXlog)
         # exp(log) to set max to 1
         DX <- exp(DXlog)
+        if(any(is.na(DX))) DX[is.na(DX)] <- 0
         # make sure no error in sample()
     }
     apply(dist, 1, which.min)
@@ -239,6 +240,11 @@ clusterProjDivisive <- function(X, tol, iter.max=100) {
         diffc <- (wssAll[i-1] - wssAll[i]) / wssAll[1]
     }
     if (i == iter.max) warning("Max iterations reached: increase kmeans.tol")
-
+# remove empty clusters
+    for (i in 1:max(cCurr)) {
+        if (length(cCurr[cCurr == i]) == 0) {
+            cCurr[cCurr > i] <- cCurr[cCurr > i] - 1
+        }
+    }
     list(c=cCurr, rss=rssAll$rss, wss=wss, wssAll=wssAll)
 }
