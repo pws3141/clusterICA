@@ -27,6 +27,7 @@ clusterProjPlusPlus <- function(X, K) {
         # exp(log) to set max to 1
         DX <- exp(DXlog)
         if(any(is.na(DX))) DX[is.na(DX)] <- 0
+        if (all(DX == 0)) DX[-allSamples] <- rep(1, n - k)
         # make sure no error in sample()
     }
     apply(dist, 1, which.min)
@@ -234,6 +235,7 @@ clusterProjDivisive <- function(X, tol, iter.max=100) {
         # find which cluster has largest RSS
         # this is at end of loop so that wss > tol_wss is correct
         rssAll <- clusterProjWss(X=X, c=cCurr)
+        if (all.equal(rssAll$rss, rep(0, times=length(rssAll$rss)))) break
         rssMax <- which.max(rssAll$rss)
         wss <- rssAll$wss
         wssAll[i] <- wss
