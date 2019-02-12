@@ -235,7 +235,7 @@ clusterProjDivisive <- function(X, tol, iter.max=100) {
         # find which cluster has largest RSS
         # this is at end of loop so that wss > tol_wss is correct
         rssAll <- clusterProjWss(X=X, c=cCurr)
-        if (all.equal(rssAll$rss, rep(0, times=length(rssAll$rss)))) break
+        if (isTRUE(all.equal(rssAll$rss, rep(0, times=length(rssAll$rss))))) break
         rssMax <- which.max(rssAll$rss)
         wss <- rssAll$wss
         wssAll[i] <- wss
