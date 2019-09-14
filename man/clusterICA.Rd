@@ -6,7 +6,7 @@
 \usage{
 clusterICA(x, p.ica = -1, p.whiten = -1, rand.iter = -1, m = -1,
   kmean.tol = 0.1, opt.maxit = 5000, opt.method = "BFGS",
-  fast.init = TRUE, compute.scores = TRUE, verbose = FALSE)
+  fast.init = NA, compute.scores = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{x}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
@@ -31,6 +31,18 @@ is optimised to find an extra direction to cluster}
 \item{compute.scores}{if TRUE then scores of the whitened data are outputted}
 
 \item{verbose}{if TRUE then information is given on the status of the function}
+}
+\value{
+An object of class ‘coords’, with the following additional
+components added:
+\itemize{
+ \item{X} {Centered data matrix}
+ \item{Y} {Whitened data matrix, found using jvcoords::whiten(x)}
+ \item{S} {Matrix of source signal estimates}
+ \item{W} {Estimated unmixing matrix, S = X  t(W)}
+ \item{R} {Orthogonal rotation matrix, S = Y  R}
+ \item{entr} {The m-spacing entropy of each column of S}
+}
 }
 \description{
 Uses random directions, clustering and optimisation to obtain ICA loadings,

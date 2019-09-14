@@ -10,7 +10,7 @@ clusterProjDivisive(X, tol, iter.max = 100)
 \item{X}{the data belonging to the projective space}
 
 \item{tol}{the tolerance that when reached, stops increasing the number of clusters.
-At each step, the (change in wss) / (original wss) must be above this tolerance.
+At each step, the (change in wcss) / (original wcss) must be above this tolerance.
 In general, as the tolerance decreases, the number of clusters in the output increases.}
 
 \item{iter.max}{the maximum number of iterations}
@@ -20,9 +20,10 @@ A list with the following components:
 \itemize{
          \item{c} {Vector of real numbers from 1 to K representing the cluster
                      that the corresponding X value belongs to.}
-         \item{rss} {Vector of the within sum-of-squares for each cluster}
-         \item{wss} {The total within sum-of-squares for the outputted cluster}
-         \item{wssAll} {The change in total within sum-of-squares for each
+         \item{sseIndividual} {Vector of the within sum-of-squares for each cluster}
+         \item{rmse} {The total within-cluster root mean-squared-error for the
+         obtained cluster} 
+         \item{rmseSequence} {The change in total within-cluster root mean-squared-error for each
                              iteration of the function}
 }
 }

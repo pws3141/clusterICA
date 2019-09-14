@@ -22,24 +22,34 @@ test.method <- function(fn) {
     cat("\n\n*** testing ", deparse(substitute(fn)), "\n\n", sep="")
     times <- numeric(0)
     clusters <- integer(0)
-    RSS <- numeric(0)
+    rmse <- numeric(0)
     for (test.idx in 1:length(test.data)) {
         X <- test.data[[test.idx]]()
         M <- 100
         t0 <- proc.time()["elapsed"]
+        rmseTmpVec <- numeric(0)
+        numClustersTmp <- numeric(0)
         for (i in 1:M) {
             cl <- fn(X)
+            if (is.list(cl)) {
+                    clusterTmp <- cl$c
+            } else {
+                    clusterTmp <- cl
+            }
+            rmseTmp <- clusterRMSE(X, c = clusterTmp) 
+            rmseTmpVec <- c(rmseTmpVec, rmseTmp$rmse)
+            numClustersTmp <- c(numClustersTmp, length(unique(clusterTmp)))
         }
         t1 <- proc.time()["elapsed"]
         times <- c(times, (t1 - t0) / M)
-        clusters <- c(clusters, length(unique(cl)))
-        RSS <- c(RSS, 0)
+        clusters <- c(clusters, mean(numClustersTmp))
+        rmse <- c(rmse, mean(rmseTmpVec))
     }
 
-    res <- data.frame(`time [ms]`=1000*times, clusters, RSS, check.names=FALSE)
+    res <- data.frame(`time [ms]`=1000*times, clusters, rmse, check.names=FALSE)
     row.names(res) <- names(test.data)
     print(res)
 }
 
-test.method(function(X) cluster.proj.kmeans(X, 3))
-test.method(function(X) cluster.proj.divisive(X, tol=.1))
+test.method(function(X) clusterProjKmeans(X, 3))
+test.method(function(X) clusterProjDivisive(X, tol = .1))

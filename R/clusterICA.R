@@ -20,17 +20,19 @@
 #' An object of class ‘coords’, with the following additional
 #' components added:
 #' \itemize{
-#' \item{X} {Centered data matrix}
-#' \item{Y} {Whitened data matrix, found using jvcoords::whiten(x)}
-#' \item{S} {Matrix of source signal estimates}
-#' \item{W} {Estimated unmixing matrix, S = X %*% t(W)}
-#' \item{R} {Orthogonal rotation matrix, S = Y %*% R}
-#' \item{entr} {The m-spacing entropy of each column of S}
+#'  \item{X} {Centered data matrix}
+#'  \item{Y} {Whitened data matrix, found using jvcoords::whiten(x)}
+#'  \item{S} {Matrix of source signal estimates}
+#'  \item{W} {Estimated unmixing matrix, S = X  t(W)}
+#'  \item{R} {Orthogonal rotation matrix, S = Y  R}
+#'  \item{entr} {The m-spacing entropy of each column of S}
 #' }
 #' @author Paul Smith, \email{mmpws@@leeds.ac.uk}
 # #' @seealso clusterProjKmeans()
 #' @keywords independent component analysis, entropy, clustering
 #'
+#' @importFrom jvcoords whiten appendTrfm fromCoords
+#' @importFrom stats optim rnorm cov
 #'
 #' @examples
 #' #---------------------------------------------------
@@ -80,53 +82,35 @@
 
 clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1, 
                         kmean.tol=0.1, opt.maxit=5000, opt.method="BFGS",
-                        fast.init=TRUE, compute.scores = TRUE, verbose=FALSE) {
-        # check if we have whitened data
-        # here p is how many PCA loadings we use to do ICA on
-        # p.ica is how many ICA loadings we want outputted
-        whitened <- FALSE
-        if(class(x) == "coords") {
-                xw <- x
-                z <- x$y
-                zCov <- cov(z)
-                zCovZero <- zCov - diag(nrow(zCov))
-                covDelta <- 1e-10
-                zCovZeroVector <- as.vector(zCovZero)
-                if (all(abs(zCovZeroVector) < covDelta)) {
-                        whitened <- TRUE
-                }
-        }
-        if(whitened == FALSE) { 
-                if(class(x) == "coords") {
-                        if(verbose == TRUE) {
-                                cat("Data 'x' of type 'coords' but not whitened: 
-                                    whitening using jvcoords")
-                        }
-                        xw <- jvcoords::whiten(x$y, compute.scores=TRUE)
-                        z <- xw$y
-                } else {
-                        if(verbose == TRUE) {
-                                cat("Data 'x' not whitened: whitening using jvcoords")
-                        }
-                        if(!(class(x) == "coords")) {
-                                xw <- jvcoords::whiten(x, compute.scores=TRUE)
-                                z <- xw$y
-                        }
-                }
-        }
+                        fast.init=NA, compute.scores = TRUE, verbose=FALSE) {
+        # check whether the data x is whitened
+        white <- whitenCheck(x = x, verbose = verbose)
+        # set z to be the whitened data
+        z <- white$z
         n <- nrow(z)
+        # p.whiten is how many whitened loadings do we do ICA on
         if(p.whiten == -1) {
                 p <- ncol(z)
         } else {
                 p <- p.whiten
                 z <- z[,1:p]
         }
+        # p.ica is how many ICA loadings we want in output
         if(p.ica == -1) p.ica <- p
         stopifnot(p.ica <= p)
         if(m == -1) m <- floor(sqrt(n))
+        # rand.iter is size of random search
         if(rand.iter == -1) rand.iter <- max(5000, min(35000, 2^(p / 4.5)))
+        # rand.out is number of directions saved from random search
         rand.out <- min(100+p, rand.iter)
         # if fastICA obj function used for initialisation
+        if (is.na(fast.init)) {
+                if (p > 50) {
+                        fast.init <- TRUE
+                } else {
+                        fast.init <- FALSE
+                }
+        }
         if (fast.init == TRUE) normSamp <- rnorm(1e5)
         # initiate loadings list
         loadings <- vector(mode = "list", length = p.ica)
@@ -137,82 +121,53 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
 
         k <- 1
         while (k <= loopNum) {
-                if (verbose == TRUE) {
-                        cat("optimising direction", k, "out of", p.ica, "\n")
-                }
                 r <- p - k + 1 # the dimension of the search space
-                if (verbose == TRUE) {
-                        cat("// Finding random starting points", "\n")
-                }
-                randDir <- randDirs(z=z, IC=IC, k=k, m=m, iter=rand.iter, out=rand.out)
+                verboseFunction(which.one=1, verbose=verbose, rand.iter=rand.iter,
+                                k=k, p.ica=p.ica)
+                randomDirections <- randomSearch(z=z, IC=IC, k=k, m=m, 
+                                                 iter=rand.iter, out=rand.out)
                 if (fast.init == TRUE) {
-                        fastDir <- fastICAInitialisation(z=z, IC=IC, m=m, k=k, norm.sampl=normSamp)
-                        randDir$dirs <- rbind(randDir$dirs, fastDir$dir)
-                        randDir$entr <- c(randDir$entr, fastDir$entr)
+                        fastDir <- fastICAInitialisation(z=z, IC=IC, m=m, k=k, 
+                                                         norm.sampl=normSamp)
+                        randomDirections$dirs <- rbind(randomDirections$dirs, 
+                                                       fastDir$dir)
+                        randomDirections$entr <- c(randomDirections$entr, 
+                                                        fastDir$entr)
                 }
-                if (verbose == TRUE) {
-                        cat("/// Found ", length(randDir$entr), " starting directions", "\n",
-                            sep="")
-                        cat("/// Sorting these into clusters \n")
-                }
-                bestDirs <- clusterNorm(z = z, IC=IC, k=k, m=m,
-                                        dirs=randDir, kmean.tol=kmean.tol,
+                verboseFunction(which.one=2, verbose=verbose, dir=randomDirections)
+                clusteredDirections <- clusterRandomSearch(z = z, IC=IC, k=k, m=m,
+                                        dirs=randomDirections, kmean.tol=kmean.tol,
                                         kmean.iter=200)
-                if (verbose == TRUE) {
-                        cat("//// Sorted into ", length(bestDirs), " clusters", "\n", sep="")
-                }
-                if (verbose == TRUE) {
-                        entrPreOptim <- unlist(sapply(bestDirs, function(x) x$entr))
-                        cat("//// Best pre-optim entropy = ", min(entrPreOptim), "\n", sep="")
-                }
-
+                verboseFunction(which.one=3, verbose=verbose, 
+                                clustered.dirs=clusteredDirections)
                 # step 2: use local optimisation to find the best solution in the
                 # each cluster
-                if (verbose == TRUE) {
-                        cat("//// Optimising ", length(bestDirs), " clusters", "\n", sep="")
-                }
-                icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
-                                          best.dirs=bestDirs, maxit = opt.maxit,
+                icaLoading <- optimiseAll(z=z, IC=IC, k=k, m=m,
+                                          clustered.dirs=clusteredDirections, 
+                                          maxit = opt.maxit,
                                           opt.method=opt.method,
                                           verbose=verbose)
-                if (verbose == TRUE) {
-                        cat("//// Optimised direction has entropy ",
-                            icaLoading$dirEntr, "\n", sep="")
-                }
+                verboseFunction(which.one=4, verbose=verbose, loading=icaLoading)
                 bestEntr <- icaLoading$dirEntr
-                bestDir <- icaLoading$dirOptim
+                bestDir <- icaLoading$optimumDirection
 
                 # is this projection better than any previous projections?
                 if(any(bestEntr < entr)) {
-                        k_tmp <- min(which(bestEntr < entr))
-                        lenBestDir <- length(bestDir)
-                        r_tmp <- (p - k_tmp + 1)
-                        bestDir <- c(rep(0, times=(r_tmp-lenBestDir)), bestDir)
-                        trialsOrigSpace <- bestDir %*% t(IC[,k_tmp:p])
-                        # switch to columns for each trial so that entr works
-                        trialsProj <- trialsOrigSpace %*% t(z[,1:p])
-                        newEntr <- mSpacingEntropy(trialsProj, m=m)
-                        k <- k_tmp
-                        r <- p - k + 1 # the dimension of the search space
-                        dirTmp <- vector("list", length=1)
-                        dirTmp[[1]]$dirs <- bestDir
-                        dirTmp[[1]]$entr <- newEntr
-                        icaLoading <- icaClusters(z=z, IC=IC, k=k, m=m,
-                                                  best.dirs=dirTmp, maxit = opt.maxit,
-                                                  opt.method=opt.method, verbose=verbose)
-                        bestDir <- icaLoading$dirOptim
-                        bestEntr <- icaLoading$dirEntr
-                        entr <- entr[1:k_tmp]
-                        if (verbose == TRUE) {
-                                cat("///// Current projection better than ", k, "th projection", "\n")
-                                cat("///// Replacing ", k, "th projection", "\n")
-                        }
+                        res <- ensureOrder(z=z, IC=IC, p=p, m=m,
+                                        best.dir=bestDir, best.entr=bestEntr, entr=entr, 
+                                        maxit=opt.maxit, opt.method=opt.method, 
+                                        verbose=verbose)
+                        bestDir <- res$newDir
+                        bestEntr <- res$newEntr
+                        entr <- res$entr
+                        k <- res$newK
+                        r <- res$newR
                 }
 
-                if (verbose == TRUE) cat("///// Householder reflection", "\n")
+                verboseFunction(which.one=6, verbose=verbose)
                 entr[k] <- bestEntr
                 # Use a Householder reflection which maps e1 to best.dir to update IC.
-                IC <- householderTransform(IC=IC, bestDir=bestDir, r=r, k=k, p=p)
+                IC <- householderTransform(IC=IC, best.dir=bestDir, r=r, k=k, p=p)
                 k <- k + 1
         }
 
@@ -225,10 +180,10 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
         }
 
         IC <- IC[, seq_len(p.ica), drop=FALSE]
-
         colnames(IC) <- paste0('wIC', seq_len(p.ica))
         # want unmixing matrix for unwhitened data x
         # x with column means removed
+        xw <- white$xw
         if(class(x) == "coords") {
                 X <- jvcoords::fromCoords(xw, xw$y)
                 Xt <- t(X) - xw$shift

@@ -1,14 +1,14 @@
 Package: clusterICA
 Type: Package
 Title: Approximate Independent Component Anaylsis
-Version: 0.93
+Version: 0.95
 Authors@R: c(
   person("Paul", "Smith", email = "mmpws@leeds.ac.uk", role = c("aut", "cre")),
   person("Jochen", "Voss", email = "J.Voss@leeds.ac.uk", role = "aut"))
 Maintainer: Paul Smith <mmpws@leeds.ac.uk>
 BugReports: https://github.com/pws3141/clusterICA/issues
 Description:
-  An implementation of approximate Indepdendent Component Analysis, using
+  An implementation of approximate Independent Component Analysis, using
   clustering and optimisation of random projections of the data. It combines
   ordering of random points on the projective space and clustering of the best
   points using divisive k-means until some tolerance condition is met, with an
