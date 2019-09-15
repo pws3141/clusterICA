@@ -1,10 +1,11 @@
 # check if data is whitened or of class "coords"
 whitenCheck <- function(x, verbose = FALSE) {
         whitened <- FALSE
+        # 1) check whether 'coords' class
+        # and if so, if it is actually whitened
         if(class(x) == "coords") {
                 xw <- x
                 z <- x$y
-                # check that it's actually white
                 zCov <- cov(z)
                 zCovZero <- zCov - diag(nrow(zCov))
                 covDelta <- 1e-10
@@ -14,6 +15,7 @@ whitenCheck <- function(x, verbose = FALSE) {
                 }
         }
         if(whitened == FALSE) { 
+        # 2) class 'coords' but not whitened
                 if(class(x) == "coords") {
                         if(verbose == TRUE) {
                                 cat("Data 'x' of type 'coords' but not whitened: 
@@ -22,13 +24,12 @@ whitenCheck <- function(x, verbose = FALSE) {
                         xw <- jvcoords::whiten(x$y, compute.scores=TRUE)
                         z <- xw$y
                 } else {
+        # 3) not class 'coords'
                         if(verbose == TRUE) {
                                 cat("Data 'x' not whitened: whitening using jvcoords")
                         }
-                        if(!(class(x) == "coords")) {
-                                xw <- jvcoords::whiten(x, compute.scores=TRUE)
-                                z <- xw$y
-                        }
+                        xw <- jvcoords::whiten(x, compute.scores=TRUE)
+                        z <- xw$y
                 }
         }
         res <- list(xw=xw, z=z)
@@ -55,15 +56,14 @@ fastICAInitialisation <- function(z, IC, m, k, norm.sampl) {
                         TermTwo <- (1 / nNorm) * sum(log(cosh(norm.sampl)))
                         output <- (TermOne - TermTwo)^2
                         -output
-                        }, 
-                        method = "BFGS", control = list(maxit = 100, trace=0))
+                        }, method = "BFGS") 
         trial <- opt$par
         trial <- trial / sqrt(sum(trial^2))
         wProj <- IC %*% c(rep(0, k-1), trial)
         xOrigSpace <- z %*% wProj
         # switch to columns for each trial so that entr works
-        entr <- mSpacingEntropy(t(xOrigSpace), m=m)
-        res <- list(dir = trial, entr = entr)
+        entropy <- mSpacingEntropy(t(xOrigSpace), m=m)
+        res <- list(dir = trial, entropy = entropy)
         res
 }
 
@@ -71,29 +71,29 @@ fastICAInitialisation <- function(z, IC, m, k, norm.sampl) {
 # best directions are those that minimise entropy
 # The value associated with the less ``important'' whitening loadings
 # have more probability of being zero
-randomSearch <- function(z, IC, k, m, iter=5000, out) {
+randomSearch <- function(z, IC, k, m, iter, out) {
     p <- ncol(IC)
     r <- p - k + 1 # the dimension of the search space
     trialsMat <- matrix(rnorm(r*iter), iter, r)
-    # lets try with some elements zero
-    # seemed to work well when tried a while back
-    # probs means that the smaller PC loadings are more
-    # likely to be ignored.
+    # set some elements to zero
+    # probability of zero corresponds to loading number
+    # i.e. loadings explaining more variability in the data more
+    # likely to be non-zero
     probs <- seq(from=1/r, to=1, length=r)
     trialsMat <- t(apply(trialsMat, 1, function(trials) {
-        # always want at least two non-zero elements
-        # otherwise would just get the PC loading back
-        sampp <- sample(1:r, size=sample(1:(r-2), 1),
-                        replace=FALSE, prob=probs)
-        trials[sampp] <- 0
+        # need at least two non-zero elements
+        # otherwise just get back loadings
+        whichIgnore <- sample(1:r, size=sample(1:(r-2), 1),
+                                replace=FALSE, prob=probs)
+        trials[whichIgnore] <- 0
         trials
     }))
     trialsMat <- trialsMat / sqrt(rowSums(trialsMat^2))
     trialsOrigSpace <- trialsMat %*% t(IC[,k:p])
-    # switch to columns for each trial so that entr works
+    # each column corresponds to a trial s.t. 
+    # mSpacingEntropy function input is correct
     trialsProj <- trialsOrigSpace %*% t(z[,1:p])
-    entr <- mSpacingEntropy(trialsProj, m=m)
-
+    entr <- mSpacingEntropy(trialsProj, m = m)
     dirTable <- cbind(entr, trialsMat)
     # arange in order
     dirTable <- dirTable[order(dirTable[,1]),]
@@ -103,36 +103,32 @@ randomSearch <- function(z, IC, k, m, iter=5000, out) {
             warning("out > iter: have set out = iter")
             out <- iter
         }
-        dirTable <- dirTable[1:(out),]
+        dirTable <- dirTable[1:out, ]
         namesW <- paste0('dir', seq_len(out))
     }
-
-    entr <- dirTable[,1]
+    entropy <- dirTable[,1]
     dirs <- dirTable[,-1]
-
     rownames(dirs) <- namesW
     colnames(dirs) <- NULL
     output <- list()
-    output$entr <- entr
+    output$entropy <- entropy
     output$dirs <- dirs
     output
 }
 
-
-
 # put random directions into clusters
 # uses divisive kmeans clustering from clusterProjDivisive
-clusterRandomSearch <- function(z, IC, k, m, dirs, kmean.tol=0.1,
+clusterRandomSearch <- function(z, IC, k, m, dirs, kmean.tol,
                         kmean.iter) {
     p <- ncol(IC)
-    entr <- dirs$entr
+    entr <- dirs$entropy
     dirs <- dirs$dirs
     # K-Means Cluster Analysis: Divisive
     c <- clusterProjDivisive(X=dirs, tol=kmean.tol, iter.max=kmean.iter)
     clusters <- max(c$c)
     # append cluster assignment & put into list
     outTmp <- vector(mode = "list", length = clusters)
-    dirsClusterAppend <- cbind(c$c, entr, dirs)
+    dirsClusterAppend <- cbind(c$c, entropy, dirs)
     for(i in 1:clusters) {
         whichCluster <- which(dirsClusterAppend[,1] == i)
         outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]

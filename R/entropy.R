@@ -36,9 +36,7 @@
 mSpacingEntropy <- function(x, m) {
     if(is.vector(x)) x <- matrix(x, nrow=1)
     if(ncol(x) == 1) stop("require p > 1")
-
-    # change to xt
-    xt <- apply(x, 1, function(x) sort(x))
+    xt <- apply(x, 1, function(x) sort(x)) # nb: change to xt
     n <- nrow(xt)
     if(missing(m)) m <- floor(sqrt(n))
 
@@ -48,15 +46,8 @@ mSpacingEntropy <- function(x, m) {
     }) - digamma(m) + log(m)
 }
 
-#TODO: unused, delete?
-optimEntropy <- function(w, x, m) {
-	xw <- as.vector(x %*% w)
-	res <- mSpacingEntropy(x=xw, m=m)
-	res
-}
- 
 optimEntropyDeriv <- function(xProj, x, m) {
-	#nb: here we require w to be a vector
+	#nb: require xProj to be a vector
 	xw <- as.vector(xProj)
 	n <- length(xw)
 	if(missing(m)) m <- floor(sqrt(n))

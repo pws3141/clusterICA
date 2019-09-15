@@ -131,14 +131,14 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
                                                          norm.sampl=normSamp)
                         randomDirections$dirs <- rbind(randomDirections$dirs, 
                                                        fastDir$dir)
-                        randomDirections$entr <- c(randomDirections$entr, 
-                                                        fastDir$entr)
+                        randomDirections$entropy <- c(randomDirections$entropy, 
+                                                        fastDir$entropy)
                 }
-                verboseFunction(which.one=2, verbose=verbose, dir=randomDirections)
-                clusteredDirections <- clusterRandomSearch(z = z, IC=IC, k=k, m=m,
-                                        dirs=randomDirections, kmean.tol=kmean.tol,
-                                        kmean.iter=200)
-                verboseFunction(which.one=3, verbose=verbose, 
+                verboseFunction(which.one = 2, verbose = verbose, dir = randomDirections)
+                clusteredDirections <- clusterRandomSearch(z = z, IC = IC, k = k, m = m,
+                                        dirs = randomDirections, kmean.tol = kmean.tol,
+                                        kmean.iter = 200)
+                verboseFunction(which.one = 3, verbose=verbose, 
                                 clustered.dirs=clusteredDirections)
                 # step 2: use local optimisation to find the best solution in the
                 # each cluster
