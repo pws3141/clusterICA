@@ -121,25 +121,28 @@ randomSearch <- function(z, IC, k, m, iter, out) {
 clusterRandomSearch <- function(z, IC, k, m, dirs, kmean.tol,
                         kmean.iter) {
     p <- ncol(IC)
-    entr <- dirs$entropy
+    entropy <- dirs$entropy
     dirs <- dirs$dirs
     # K-Means Cluster Analysis: Divisive
     c <- clusterProjDivisive(X=dirs, tol=kmean.tol, iter.max=kmean.iter)
     clusters <- max(c$c)
     # append cluster assignment & put into list
-    outTmp <- vector(mode = "list", length = clusters)
+    res <- vector(mode = "list", length = 2)
+    res$entropy <- numeric(0)
+    #res$directions <- matrix(n
     dirsClusterAppend <- cbind(c$c, entropy, dirs)
     for(i in 1:clusters) {
         whichCluster <- which(dirsClusterAppend[,1] == i)
-        outTmp[[i]]$entr <- dirsClusterAppend[whichCluster, 2]
-        entrMin <- which.min(outTmp[[i]]$entr)
-        outTmp[[i]]$entr <- outTmp[[i]]$entr[entrMin]
-        outTmp[[i]]$dirs <- dirsClusterAppend[whichCluster, c(-1, -2),
+        entropyCluster <- dirsClusterAppend[whichCluster, 2]
+        entropyMin <- which.min(entropyCluster)
+        res$entropy <- c(res$entropy, entropyMin)
+        #res[[i]]$entropy <- entropyMin[entropyMin]
+        directionsCluster <- dirsClusterAppend[whichCluster, c(-1, -2),
                                           drop=FALSE]
-        outTmp[[i]]$dirs <- outTmp[[i]]$dirs[entrMin,]
+        res$directions <- cbind(res$directions, directionsCluster[entropyMin, ])
+        #res[[i]]$direction <- directionsCluster[entropyMin,]
     }
-    outTmp
-    return(outTmp)
+    res
 }
 
 # optimise each direction
@@ -230,38 +233,32 @@ optimiseAll <- function(z, IC, k, m, clustered.dirs, maxit=1000,
                         opt.method="BFGS", verbose=FALSE) {
     n <- nrow(z)
     p <- ncol(IC)
-
-    clusters <- length(clustered.dirs)
+    clusters <- ncol(clustered.dirs)
     if (verbose == TRUE) {
         cat("////Optimising direction of projection on ",
             clusters, " clusters \n")
     }
-
     dirOpt <- matrix(nrow = clusters, ncol = (p  - k + 1 + 1))
     dirOptMany <- vector(mode="list", length=clusters)
     for(i in 1:clusters) {
         if (verbose == TRUE) {
             cat("//// Optimising cluster ", i, "\n")
         }
-        dirTmp <- clustered.dirs[[i]]
-        nTmp <- length(dirTmp$entr)
-        #if (nTmp == 1) {
-        dirOptTmp <- .optimiseDirection(z = z, IC = IC, dirs = dirTmp$dirs,
+        dirTmp <- clustered.dirs[, i]
+        dirOptTmp <- .optimiseDirection(z = z, IC = IC, dirs = dirTmp,
                                 k = k, m = m, maxit = maxit,
-                                cluster=i, opt.method=opt.method)
+                                cluster = i, opt.method = opt.method)
         dirOpt[i,] <- c(dirOptTmp$entr, dirOptTmp$dirs)
-        #}
     }
     clusterNum <- which.min(dirOpt[,1])
     output <- list()
     output$clusterNum <- clusterNum
-    output$dirEntr <- dirOpt[clusterNum, 1]
-    output$optimumDirections <- dirOpt[clusterNum, -1]
-    return(output)
+    output$optimumEntropy <- dirOpt[clusterNum, 1]
+    output$optimumDirection <- dirOpt[clusterNum, -1]
+    output
 }
 
-ensureOrder <- function(z, IC, p, m,
-                        best.dir, best.entr, entr, 
+ensureOrder <- function(z, IC, p, m, best.dir, best.entr, entr, 
                         maxit, opt.method, verbose) {
         k <- min(which(best.entr < entr))
         verboseFunction(which.one=5, verbose=verbose, k=k)
@@ -270,32 +267,28 @@ ensureOrder <- function(z, IC, p, m,
         bestDirOrigSpace <- c(rep(0, times=(r_tmp-lenBestDir)), best.dir)
         trialsOrigSpace <- bestDirOrigSpace %*% t(IC[,k:p])
         # switch to columns for each trial so that entr works
-        trialsProj <- trialsOrigSpace %*% t(z[,1:p])
-        newEntr <- mSpacingEntropy(trialsProj, m=m)
         r <- p - k + 1 # the dimension of the search space
-        dirTmp <- vector("list", length=1)
-        dirTmp[[1]]$dirs <- bestDirOrigSpace
-        dirTmp[[1]]$entr <- newEntr
-        icaLoading <- optimiseAll(z=z, IC=IC, k=k, m=m,
-                                  clustered.dirs=dirTmp, maxit = maxit,
-                                  opt.method=opt.method, verbose=verbose)
-        newDir<- icaLoading$optimumDirection
-        newEntr <- icaLoading$dirEntr
+        icaLoading <- optimiseAll(z=z, IC = IC, k = k, m = m,
+                                  clustered.dirs = bestDirOrigSpace, maxit = maxit,
+                                  opt.method = opt.method, verbose = verbose)
+        newDir <- icaLoading$optimumDirection
+        newEntr <- icaLoading$optimumEntropy
         entr <- entr[1:k]
-        res <- list(newDir=newDir, newEntr=newEntr, entr=entr, newK=k, newR=r)
+        res <- list(newDir = newDir, newEntr = newEntr, 
+                    entr = entr, newK = k, newR = r)
         res
 }
 
 householderTransform <- function(IC, best.dir, r, k, p) {
         # Use a Householder reflection which maps e1 to best.dir to update IC.
-        e1 <- c(1, rep(0, r-1))
+        e1 <- c(1, rep(0, r - 1))
         # take sign of x_k s.t.
         # k is the last col entry of non-zero in UT form A = QR
         signTmp <- sign(best.dir[1])
         v <- best.dir - signTmp * e1
         v <- v / sqrt(sum(v^2))
         P <- diag(r) - 2 * tcrossprod(v)
-        IC[,k:p] <- IC[,k:p,drop=FALSE] %*% P
+        IC[, k:p] <- IC[, k:p, drop=FALSE] %*% P
         IC
 }
 

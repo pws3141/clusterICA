@@ -98,6 +98,7 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
         # p.ica is how many ICA loadings we want in output
         if(p.ica == -1) p.ica <- p
         stopifnot(p.ica <= p)
+        # m is spacing used in mSpacingEntropy
         if(m == -1) m <- floor(sqrt(n))
         # rand.iter is size of random search
         if(rand.iter == -1) rand.iter <- max(5000, min(35000, 2^(p / 4.5)))
@@ -105,11 +106,8 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
         rand.out <- min(100+p, rand.iter)
         # if fastICA obj function used for initialisation
         if (is.na(fast.init)) {
-                if (p > 50) {
-                        fast.init <- TRUE
-                } else {
-                        fast.init <- FALSE
-                }
+                fast.init <- FALSE
+                if (p > 50) fast.init <- TRUE 
         }
         if (fast.init == TRUE) normSamp <- rnorm(1e5)
         # initiate loadings list
@@ -124,6 +122,8 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
                 r <- p - k + 1 # the dimension of the search space
                 verboseFunction(which.one=1, verbose=verbose, rand.iter=rand.iter,
                                 k=k, p.ica=p.ica)
+                # step 1: initialise using random directions
+                # save the rand.out best directions
                 randomDirections <- randomSearch(z=z, IC=IC, k=k, m=m, 
                                                  iter=rand.iter, out=rand.out)
                 if (fast.init == TRUE) {
@@ -135,23 +135,23 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
                                                         fastDir$entropy)
                 }
                 verboseFunction(which.one = 2, verbose = verbose, dir = randomDirections)
+                # step 2: cluster the rand.out initial directions
                 clusteredDirections <- clusterRandomSearch(z = z, IC = IC, k = k, m = m,
                                         dirs = randomDirections, kmean.tol = kmean.tol,
                                         kmean.iter = 200)
                 verboseFunction(which.one = 3, verbose=verbose, 
                                 clustered.dirs=clusteredDirections)
-                # step 2: use local optimisation to find the best solution in the
+                # step 3: use local optimisation to find the best solution in the
                 # each cluster
                 icaLoading <- optimiseAll(z=z, IC=IC, k=k, m=m,
-                                          clustered.dirs=clusteredDirections, 
-                                          maxit = opt.maxit,
-                                          opt.method=opt.method,
+                                          clustered.dirs=clusteredDirections$directions, 
+                                          maxit = opt.maxit, opt.method=opt.method,
                                           verbose=verbose)
                 verboseFunction(which.one=4, verbose=verbose, loading=icaLoading)
-                bestEntr <- icaLoading$dirEntr
+                bestEntr <- icaLoading$optimumEntropy
                 bestDir <- icaLoading$optimumDirection
-
-                # is this projection better than any previous projections?
+                # step 4: check whether this projection is better than 
+                # any previous projections
                 if(any(bestEntr < entr)) {
                         res <- ensureOrder(z=z, IC=IC, p=p, m=m,
                                         best.dir=bestDir, best.entr=bestEntr, entr=entr, 
@@ -163,7 +163,6 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
                         k <- res$newK
                         r <- res$newR
                 }
-
                 verboseFunction(which.one=6, verbose=verbose)
                 entr[k] <- bestEntr
                 # Use a Householder reflection which maps e1 to best.dir to update IC.
