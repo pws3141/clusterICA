@@ -118,6 +118,7 @@ randomSearch <- function(z, IC, k, m, iter, out) {
 
 # put random directions into clusters
 # uses divisive kmeans clustering from clusterProjDivisive
+# out: best direction from each cluster
 clusterRandomSearch <- function(z, IC, k, m, dirs, kmean.tol,
                         kmean.iter) {
     p <- ncol(IC)
@@ -300,19 +301,21 @@ verboseFunction <- function(which.one, verbose, k=NA, rand.iter=NA, p.ica=NA,
                         cat("// Finding ", rand.iter, "random starting points", "\n")
                 }
                 if (which.one == 2) {
-                        cat("/// Found ", length(dir$entr), " starting directions", "\n",
+                        cat("/// Found ", length(dir$entropy), " starting directions", "\n",
                             sep="")
                         cat("/// Sorting these into clusters \n")
                 }
                 if (which.one == 3) {
-                        cat("//// Sorted into ", length(clustered.dirs), " clusters", "\n", sep="")
-                        entrPreOptim <- unlist(sapply(clustered.dirs, function(x) x$entr))
+                        numClusters <- length(clustered.dirs$entropy)
+                        cat("//// Sorted into ", numClusters,
+                            " clusters", "\n", sep="")
+                        entrPreOptim <- clustered.dirs$entropy
                         cat("//// Best pre-optim entropy = ", min(entrPreOptim), "\n", sep="")
-                        cat("//// Optimising ", length(clustered.dirs), " clusters", "\n", sep="")
+                        cat("//// Optimising ", numClusters, " clusters", "\n", sep="")
                 }
                 if (which.one == 4) {
                         cat("//// Optimised direction has entropy ",
-                            loading$dirEntr, "\n", sep="")
+                            loading$optimumEntropy, "\n", sep="")
                 }
                 if (which.one == 5) {
                         cat("///// Current projection better than ", k, 
