@@ -4,7 +4,7 @@
 #' Uses random directions, clustering and optimisation to obtain ICA loadings,
 #'  using the m-spacing entropy estimation as the objective function to minimise.
 #'
-#' @param x the data to perform ICA on, ncol(x) = n, nrow(x) = p
+#' @param X the data to perform ICA on, ncol(x) = n, nrow(x) = p
 #' @param p.ica the number of ICA loadings outputted
 #' @param p.whiten (optional) the size of the whitened matrix, i.e. how many PCA loadings to keep in the whitening step
 #' @param rand.iter the number of random directions to initialise
@@ -52,7 +52,7 @@
 #' good2 <- cos(20 * x2 %*% a1) >= 0
 #' x2Good <- x2[which(good2),]
 #' xGood <- rbind(x1Good, x2Good)
-#' a <- clusterICA(x=xGood, p.ica=1, rand.iter=1000)
+#' a <- clusterICA(X=xGood, p.ica=1, rand.iter=1000)
 #' par(mfrow = c(1,3))
 #' plot(xGood, main = "Pre-processed data")
 #' plot(a$Y, main = "Whitened data")
@@ -80,11 +80,11 @@
 #' @export
 #/*}}}*/
 
-clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1, 
+clusterICA <- function(X, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1, 
                         kmean.tol=0.1, opt.maxit=5000, opt.method="BFGS",
                         fast.init=NA, compute.scores = TRUE, verbose=FALSE) {
         # check whether the data x is whitened
-        white <- whitenCheck(x = x, verbose = verbose)
+        white <- whitenCheck(x = X, verbose = verbose)
         # set z to be the whitened data
         z <- white$z
         n <- nrow(z)
@@ -153,20 +153,53 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
                 # step 4: check whether this projection is better than 
                 # any previous projections
                 if(any(bestEntr < entr)) {
-                        res <- ensureOrder(z=z, IC=IC, p=p, m=m,
-                                        best.dir=bestDir, best.entr=bestEntr, entr=entr, 
-                                        maxit=opt.maxit, opt.method=opt.method, 
-                                        verbose=verbose)
-                        bestDir <- res$newDir
-                        bestEntr <- res$newEntr
-                        entr <- res$entr
-                        k <- res$newK
-                        r <- res$newR
+                        v_k <- matrix(c(rep(0, times = p - r), bestDir), ncol = 1)
+                        R.v_k <- IC %*% v_k
+                        q_k <- R.v_k
+                        Y.q_k <- z %*% R.v_k
+                        entr.curr <- mSpacingEntropy(t(Y.q_k), m = m)
+
+                        k.replace <- min(which(entr.curr < entr))
+                        r.replace <- p - k.replace + 1
+                        
+                        IC[, c(k.replace, k)] <- IC[, c(k, k.replace)]
+
+                        # bestDir transormed s.t. Y %*% new IC %*% q_k has entr.curr
+                        bestDir_transform <- c(bestDir[1], rep(0, times = k - k.replace),
+                                               bestDir[-1])
+                        # check
+                        v_k_transform <- matrix(c(rep(0, times = p - r.replace), 
+                                                   bestDir_transform), ncol = 1)
+                        Y.q_k_transform <- z %*% IC %*% v_k_transform
+                        all.equal(mSpacingEntropy(t(Y.q_k_transform), m = m), entr.curr)
+
+                        verboseFunction(which.one=6, verbose=verbose)
+                        # Use a Householder reflection which maps e1 to best.dir to update IC.
+                        e1 <- c(1, rep(0, r.replace - 1))
+
+                        # take sign of x_k s.t.
+                        # k is the last col entry of non-zero in UT form A = QR
+                        signTmp <- sign(bestDir_transform[1])
+
+                        v <- bestDir_transform - signTmp * e1
+                        v <- v / sqrt(sum(v^2))
+                        P <- diag(r.replace) - 2 * tcrossprod(v)
+
+                        IC[, k.replace:p] <- IC[, k.replace:p, drop=FALSE] %*% P
+
+                        entr <- entr[1:k.replace]
+                        entr[k.replace] <- entr.curr
+
+                        k <- k.replace
+                        r <- r.replace
+
+                } else {
+                        verboseFunction(which.one=6, verbose=verbose)
+                        entr[k] <- bestEntr
+
+                        # Use a Householder reflection which maps e1 to best.dir to update IC.
+                        IC <- householderTransform(IC=IC, best.dir=bestDir, r=r, k=k, p=p)
                 }
-                verboseFunction(which.one=6, verbose=verbose)
-                entr[k] <- bestEntr
-                # Use a Householder reflection which maps e1 to best.dir to update IC.
-                IC <- householderTransform(IC=IC, best.dir=bestDir, r=r, k=k, p=p)
                 k <- k + 1
         }
 
@@ -183,11 +216,11 @@ clusterICA <- function(x, p.ica=-1, p.whiten=-1, rand.iter=-1, m=-1,
         # want unmixing matrix for unwhitened data x
         # x with column means removed
         xw <- white$xw
-        if(class(x) == "coords") {
+        if(class(X) == "coords") {
                 X <- jvcoords::fromCoords(xw, xw$y)
                 Xt <- t(X) - xw$shift
         } else {
-                Xt <- t(x) - xw$shift
+                Xt <- t(X) - xw$shift
         }
         rownames(Xt) <- paste0('Xcentred', seq_len(nrow(Xt)))
         # make into class "coords"

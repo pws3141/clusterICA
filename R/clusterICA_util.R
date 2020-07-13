@@ -18,8 +18,7 @@ whitenCheck <- function(x, verbose = FALSE) {
         # 2) class 'coords' but not whitened
                 if(class(x) == "coords") {
                         if(verbose == TRUE) {
-                                cat("Data 'x' of type 'coords' but not whitened: 
-                                    whitening using jvcoords")
+                                cat("Data 'x' of type 'coords' but not whitened: whitening using jvcoords")
                         }
                         xw <- jvcoords::whiten(x$y, compute.scores=TRUE)
                         z <- xw$y
@@ -69,25 +68,10 @@ fastICAInitialisation <- function(z, IC, m, k, norm.sampl) {
 
 # produce random directions, and choose the 'out' best directions
 # best directions are those that minimise entropy
-# The value associated with the less ``important'' whitening loadings
-# have more probability of being zero
 randomSearch <- function(z, IC, k, m, iter, out) {
     p <- ncol(IC)
     r <- p - k + 1 # the dimension of the search space
     trialsMat <- matrix(rnorm(r*iter), iter, r)
-    # set some elements to zero
-    # probability of zero corresponds to loading number
-    # i.e. loadings explaining more variability in the data more
-    # likely to be non-zero
-    probs <- seq(from=1/r, to=1, length=r)
-    trialsMat <- t(apply(trialsMat, 1, function(trials) {
-        # need at least two non-zero elements
-        # otherwise just get back loadings
-        whichIgnore <- sample(1:r, size=sample(1:(r-2), 1),
-                                replace=FALSE, prob=probs)
-        trials[whichIgnore] <- 0
-        trials
-    }))
     trialsMat <- trialsMat / sqrt(rowSums(trialsMat^2))
     trialsOrigSpace <- trialsMat %*% t(IC[,k:p])
     # each column corresponds to a trial s.t. 
@@ -128,15 +112,13 @@ clusterRandomSearch <- function(z, IC, k, m, dirs, kmean.tol,
     c <- clusterProjDivisive(X=dirs, tol=kmean.tol, iter.max=kmean.iter)
     clusters <- max(c$c)
     # append cluster assignment & put into list
-    res <- vector(mode = "list", length = 2)
-    res$entropy <- numeric(0)
-    #res$directions <- matrix(n
+    res <- list(entropy = numeric(0))
     dirsClusterAppend <- cbind(c$c, entropy, dirs)
     for(i in 1:clusters) {
         whichCluster <- which(dirsClusterAppend[,1] == i)
         entropyCluster <- dirsClusterAppend[whichCluster, 2]
         entropyMin <- which.min(entropyCluster)
-        res$entropy <- c(res$entropy, entropyMin)
+        res$entropy <- c(res$entropy, entropyCluster[entropyMin])
         #res[[i]]$entropy <- entropyMin[entropyMin]
         directionsCluster <- dirsClusterAppend[whichCluster, c(-1, -2),
                                           drop=FALSE]
@@ -212,11 +194,21 @@ clusterRandomSearch <- function(z, IC, k, m, dirs, kmean.tol,
             method = opt.method, control = list(maxit = maxit, trace=0))
     }
     if (opt$convergence == 1) {
-            warning("In loading ", k, ", cluster ", cluster, 
-                    " optimisation did not converge, consider increasing maxit \n")
+            if (is.na(cluster)) { # cluster = NA when ensureOrder run
+                    warning("In loading ", k,
+                            " optimisation did not converge, consider increasing maxit \n")
+            } else {
+                    warning("In loading ", k, ", cluster ", cluster, 
+                            " optimisation did not converge, consider increasing maxit \n")
+            }
     } else if (opt$convergence != 0) {
-            warning("In loading ", k, ", cluster ", cluster, 
-                    " optimisation did not converge (error ", opt$convergence, ") \n")
+            if (is.na(cluster)) { # cluster = NA when ensureOrder run
+                    warning("In loading ", k,
+                            " optimisation did not converge (error ", opt$convergence, ") \n")
+            } else {
+                    warning("In loading ", k, ", cluster ", cluster, 
+                            " optimisation did not converge (error ", opt$convergence, ") \n")
+            }
     }
     entrTmp <- opt$value
     dirTmp <- opt$par
@@ -234,6 +226,9 @@ optimiseAll <- function(z, IC, k, m, clustered.dirs, maxit=1000,
                         opt.method="BFGS", verbose=FALSE) {
     n <- nrow(z)
     p <- ncol(IC)
+    if (is.vector(clustered.dirs)) {
+            clustered.dirs <- matrix(clustered.dirs, ncol = 1)
+    }
     clusters <- ncol(clustered.dirs)
     if (verbose == TRUE) {
         cat("////Optimising direction of projection on ",
@@ -261,19 +256,32 @@ optimiseAll <- function(z, IC, k, m, clustered.dirs, maxit=1000,
 
 ensureOrder <- function(z, IC, p, m, best.dir, best.entr, entr, 
                         maxit, opt.method, verbose) {
-        k <- min(which(best.entr < entr))
-        verboseFunction(which.one=5, verbose=verbose, k=k)
-        lenBestDir <- length(best.dir)
-        r_tmp <- (p - k + 1)
-        bestDirOrigSpace <- c(rep(0, times=(r_tmp-lenBestDir)), best.dir)
-        trialsOrigSpace <- bestDirOrigSpace %*% t(IC[,k:p])
-        # switch to columns for each trial so that entr works
-        r <- p - k + 1 # the dimension of the search space
-        icaLoading <- optimiseAll(z=z, IC = IC, k = k, m = m,
-                                  clustered.dirs = bestDirOrigSpace, maxit = maxit,
-                                  opt.method = opt.method, verbose = verbose)
-        newDir <- icaLoading$optimumDirection
-        newEntr <- icaLoading$optimumEntropy
+        k.check <- min(which(best.entr < entr))
+        counter <- 0
+        while(TRUE) {
+                k <- k.check
+                verboseFunction(which.one = 5, verbose = verbose, k = k)
+                lenBestDir <- length(best.dir)
+                r <- (p - k + 1)
+
+                bestDirOrigSpace <- c(rep(0, times = (r - lenBestDir)), best.dir)
+                trialsOrigSpace <- bestDirOrigSpace %*% t(IC[,k:p])
+
+                icaLoading <- .optimiseDirection(z = z, IC = IC, dirs = bestDirOrigSpace,
+                                                 k = k, m = m, maxit = maxit,
+                                                 cluster = NA, opt.method = opt.method)
+                newDir <- icaLoading$dirs
+                newEntr <- icaLoading$entr
+
+                k.check <- min(which(newEntr < entr))
+                if (k.check == k) break
+                if (k.check > k) {
+                        if (counter == 1) break
+                        k.check <- k.check + 1
+                        counter <- 1
+                }
+        }
+
         entr <- entr[1:k]
         res <- list(newDir = newDir, newEntr = newEntr, 
                     entr = entr, newK = k, newR = r)
@@ -323,7 +331,7 @@ verboseFunction <- function(which.one, verbose, k=NA, rand.iter=NA, p.ica=NA,
                         cat("///// Replacing ", k, "th projection", "\n")
                 }
                 if (which.one == 6) {
-                        cat("///// Householder reflection", "\n")
+                        cat("///// Householder reflection\n\n")
                 }
         }
 }

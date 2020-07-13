@@ -1,7 +1,7 @@
 Package: clusterICA
 Type: Package
 Title: Approximate Independent Component Anaylsis
-Version: 0.96
+Version: 0.98
 Authors@R: c(
   person("Paul", "Smith", email = "mmpws@leeds.ac.uk", role = c("aut", "cre")),
   person("Jochen", "Voss", email = "J.Voss@leeds.ac.uk", role = "aut"))

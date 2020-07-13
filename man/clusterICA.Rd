@@ -4,12 +4,12 @@
 \alias{clusterICA}
 \title{Independent Component Analysis (ICA)}
 \usage{
-clusterICA(x, p.ica = -1, p.whiten = -1, rand.iter = -1, m = -1,
+clusterICA(X, p.ica = -1, p.whiten = -1, rand.iter = -1, m = -1,
   kmean.tol = 0.1, opt.maxit = 5000, opt.method = "BFGS",
   fast.init = NA, compute.scores = TRUE, verbose = FALSE)
 }
 \arguments{
-\item{x}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
+\item{X}{the data to perform ICA on, ncol(x) = n, nrow(x) = p}
 
 \item{p.ica}{the number of ICA loadings outputted}
 
@@ -66,7 +66,7 @@ x2[,2] <- scale(x2[,2])
 good2 <- cos(20 * x2 \%*\% a1) >= 0
 x2Good <- x2[which(good2),]
 xGood <- rbind(x1Good, x2Good)
-a <- clusterICA(x=xGood, p.ica=1, rand.iter=1000)
+a <- clusterICA(X=xGood, p.ica=1, rand.iter=1000)
 par(mfrow = c(1,3))
 plot(xGood, main = "Pre-processed data")
 plot(a$Y, main = "Whitened data")
